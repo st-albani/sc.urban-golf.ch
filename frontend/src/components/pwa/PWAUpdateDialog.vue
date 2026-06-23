@@ -2,7 +2,7 @@
   <Teleport to="body">
     <Transition name="slide-up">
       <aside
-        v-if="showUpdateDialog"
+        v-if="updateAvailable"
         role="alertdialog"
         aria-live="polite"
         :aria-label="$t('PWA.UpdateAvailable')"
@@ -41,10 +41,13 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { usePWAUpdate } from '@/composables/usePWAUpdate'
+import { storeToRefs } from 'pinia'
+import { usePWAUpdateStore } from '@/stores/pwaUpdate'
 import { ArrowPathIcon, XMarkIcon } from '@heroicons/vue/24/outline'
 
-const { showUpdateDialog, applyUpdate, dismissUpdate } = usePWAUpdate()
+const pwaStore = usePWAUpdateStore()
+const { updateAvailable } = storeToRefs(pwaStore)
+const { applyUpdate, dismissUpdate } = pwaStore
 
 const applying = ref(false)
 

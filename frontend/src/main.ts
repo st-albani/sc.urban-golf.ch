@@ -6,7 +6,7 @@ import './assets/global.css'
 import axios from 'axios'
 import { createI18n } from 'vue-i18n'
 import { registerSW } from 'virtual:pwa-register'
-import { usePWAUpdate } from './composables/usePWAUpdate'
+import { usePWAUpdateStore } from './stores/pwaUpdate'
 import { useToast } from './composables/useToast'
 
 import de from './locales/de.json'
@@ -81,12 +81,13 @@ watch(
   { immediate: true }
 )
 
-// PWA Service Worker registration
-const { onNeedRefresh } = usePWAUpdate()
+// PWA Service Worker registration. Pinia must be installed first (see
+// createApp().use(createPinia()) above) so the store can be accessed here.
+const pwaStore = usePWAUpdateStore()
 
 const updateSW = registerSW({
   onNeedRefresh() {
-    onNeedRefresh(updateSW)
+    pwaStore.registerUpdate(updateSW)
   },
   onOfflineReady() {
     // App is ready for offline use
