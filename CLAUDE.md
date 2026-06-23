@@ -115,3 +115,17 @@ Siehe [.github/workflows/ci.yml](.github/workflows/ci.yml).
 1. Commit-Message im Imperativ, kurz ("Fix", "Add", "Update").
 2. `npm run test:all` lokal grün.
 3. PR gegen `main`, Reviewer-Notiz wenn etwas Manual-Check braucht (z.B. neue Migrations).
+
+## Agent skills
+
+### Issue tracker
+
+Issues live in `toelpel/sc.urban-golf.ch` on GitHub via the `gh` CLI. See [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
+
+### Triage labels
+
+Canonical defaults — all five labels (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`) exist on the repo. See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` + `docs/adr/` at the repo root cover both `frontend/` and `backend/`. See [docs/agents/domain.md](docs/agents/domain.md).
