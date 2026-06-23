@@ -1,19 +1,30 @@
-// Single source of truth für die API-Contract-Shapes (Request/Response).
-//
-// Aktuell als Doku- und Test-Referenz gepflegt. Beim Wiring an Routes
-// (`schema: { body, response }`) zwei Punkte beachten:
-//   1. fast-json-stringify strippt Felder, die nicht in den response-properties
-//      stehen → response-Schemas vorher gegen reale Antworten verifizieren.
-//   2. Fastify-Default-Body-Errors haben ein anderes Format als die manuellen
-//      `validate*()`-Helpers. Vor dem Umstieg `setSchemaErrorFormatter` setzen
-//      und die Route-Tests anpassen, sonst brechen die `Validation failed`-
-//      Assertions in backend/routes/__tests__.
-import { VALIDATION } from './constants.js'
+// Shared validation contract — single source of truth for both workspaces.
+// Harmonized values: where frontend and backend previously disagreed, the
+// more permissive value wins (STROKES_MAX 20, GAME_NAME_MAX_LENGTH 100) so
+// existing data never becomes retroactively invalid.
+
+export const VALIDATION = Object.freeze({
+  STROKES_MIN: -3,
+  STROKES_MAX: 20,
+  HOLE_MIN: 1,
+  HOLE_MAX: 18,
+  NAME_MAX_LENGTH: 100,
+  GAME_NAME_MAX_LENGTH: 100,
+  MESSAGE_MAX_LENGTH: 2000,
+  PLAYERS_MAX: 10,
+  RATING_MIN: 1,
+  RATING_MAX: 5,
+  EMAIL_MAX_LENGTH: 100,
+});
+
+export const ID_PATTERN = /^[a-zA-Z0-9_-]{10,30}$/;
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const ID_PATTERN_STRING = '^[a-zA-Z0-9_-]{10,30}$';
 
 const idSchema = {
   type: 'string',
-  pattern: '^[a-zA-Z0-9_-]{10,30}$',
-}
+  pattern: ID_PATTERN_STRING,
+};
 
 const playerSchema = {
   type: 'object',
@@ -22,7 +33,7 @@ const playerSchema = {
     id: idSchema,
     name: { type: 'string', minLength: 1, maxLength: VALIDATION.NAME_MAX_LENGTH },
   },
-}
+};
 
 const gameRowSchema = {
   type: 'object',
@@ -32,7 +43,7 @@ const gameRowSchema = {
     name: { type: 'string' },
     created_at: { type: ['string', 'null'] },
   },
-}
+};
 
 const scoreRowSchema = {
   type: 'object',
@@ -45,10 +56,9 @@ const scoreRowSchema = {
     hole: { type: 'integer', minimum: VALIDATION.HOLE_MIN, maximum: VALIDATION.HOLE_MAX },
     strokes: { type: 'integer', minimum: VALIDATION.STROKES_MIN, maximum: VALIDATION.STROKES_MAX },
   },
-}
+};
 
-export const schemas = {
-  // Players
+export const schemas = Object.freeze({
   postPlayer: {
     body: {
       type: 'object',
@@ -73,14 +83,20 @@ export const schemas = {
 
   getPlayers: {
     response: {
-      200: {
-        type: 'array',
-        items: playerSchema,
-      },
+      200: { type: 'array', items: playerSchema },
     },
   },
 
-  // Games
+  getGameById: {
+    response: { 200: gameRowSchema },
+  },
+
+  getGamePlayers: {
+    response: {
+      200: { type: 'array', items: playerSchema },
+    },
+  },
+
   postGame: {
     body: {
       type: 'object',
@@ -91,6 +107,7 @@ export const schemas = {
         players: {
           type: 'array',
           minItems: 1,
+          maxItems: VALIDATION.PLAYERS_MAX,
           items: idSchema,
         },
       },
@@ -98,35 +115,11 @@ export const schemas = {
     },
   },
 
-  getGameById: {
-    response: {
-      200: gameRowSchema,
-    },
-  },
-
-  getGamePlayers: {
-    response: {
-      200: {
-        type: 'array',
-        items: playerSchema,
-      },
-    },
-  },
-
-  // Scores
   getScores: {
     querystring: {
       type: 'object',
       required: ['game_id'],
-      properties: {
-        game_id: idSchema,
-      },
-    },
-    response: {
-      200: {
-        type: 'array',
-        items: scoreRowSchema,
-      },
+      properties: { game_id: idSchema },
     },
   },
 
@@ -142,21 +135,8 @@ export const schemas = {
       },
       additionalProperties: false,
     },
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          id: { type: ['integer', 'string'] },
-          game_id: idSchema,
-          player_id: idSchema,
-          hole: { type: 'integer' },
-          strokes: { type: 'integer' },
-        },
-      },
-    },
   },
 
-  // Feedback
   postFeedback: {
     body: {
       type: 'object',
@@ -179,17 +159,22 @@ export const schemas = {
         email: {
           type: ['string', 'null'],
           maxLength: VALIDATION.EMAIL_MAX_LENGTH,
+          pattern: '^$|^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
         },
       },
       additionalProperties: false,
     },
-    response: {
-      200: {
-        type: 'object',
-        properties: {
-          success: { type: 'boolean' },
-        },
-      },
-    },
   },
+});
+
+export { playerSchema, gameRowSchema, scoreRowSchema };
+
+export function isValidId(id) {
+  return typeof id === 'string' && ID_PATTERN.test(id);
+}
+
+export function isValidEmail(email) {
+  return typeof email === 'string'
+    && email.length <= VALIDATION.EMAIL_MAX_LENGTH
+    && EMAIL_PATTERN.test(email);
 }

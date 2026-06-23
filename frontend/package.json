@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@heroicons/vue": "^2.2.0",
+    "@urban-golf/contract": "*",
     "@vueuse/core": "^14.0.0",
     "axios": "^1.15.2",
     "marked": "^18.0.2",

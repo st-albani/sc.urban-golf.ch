@@ -1,14 +1,6 @@
-import { VALIDATION, ID_PATTERN, EMAIL_PATTERN } from './constants.js'
+import { VALIDATION, isValidId, isValidEmail } from '@urban-golf/contract'
 
-export function isValidId(id) {
-  return typeof id === 'string' && ID_PATTERN.test(id)
-}
-
-export function isValidEmail(email) {
-  return typeof email === 'string'
-    && email.length <= VALIDATION.EMAIL_MAX_LENGTH
-    && EMAIL_PATTERN.test(email)
-}
+export { isValidId, isValidEmail }
 
 export function validateScore({ game_id, player_id, hole, strokes } = {}) {
   const errors = []
