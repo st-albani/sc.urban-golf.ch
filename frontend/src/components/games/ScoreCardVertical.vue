@@ -89,7 +89,6 @@ const props = defineProps<{
   players: Player[]
   holes: number[]
   scores: ScoreMap
-  gameId: string
   sortColumn: string
   sortDirection: string
   sortedPlayers: Player[]

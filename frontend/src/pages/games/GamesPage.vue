@@ -25,16 +25,7 @@
               </AppIconButton>
             </div>
 
-            <SegmentedControl
-              v-model="viewMode"
-              :options="viewOptions"
-              label="Ansicht"
-              block
-            />
-
-            <!-- Direkter Loch-Zugriff auf allen drei Views — gleiche Chip-Leiste
-                 wie in der Hole-View, macht das Navigieren zwischen Löchern
-                 konsistent und schnell. -->
+            <!-- Direkter Loch-Zugriff: Chip-Leiste zum Springen in die Hole-View. -->
             <div v-if="holes.length" class="games-detail__holes scroll-hide" role="list">
               <router-link
                 v-for="n in holes"
@@ -55,50 +46,7 @@
             </div>
           </header>
 
-          <GamesDetailSkeleton v-if="players.length === 0" :rows="4" :columns="6" />
-
-          <div v-else class="games-detail__body">
-            <Transition name="view-fade" mode="out-in">
-              <GamesDetailRanking
-                v-if="viewMode === 'ranking'"
-                key="ranking"
-                :sort-column="sortColumn"
-                :sort-direction="sortDirection"
-                :sorted-players="sortedPlayers"
-                :average-score="averageScore"
-                :total-score="totalScore"
-                @sort="sortBy"
-              />
-              <GamesDetailHorizontal
-                v-else-if="viewMode === 'horizontal'"
-                key="horizontal"
-                :players="sortedPlayers"
-                :holes="holes"
-                :scores="scores"
-                :game-id="gameId"
-                :sort-column="sortColumn"
-                :sort-direction="sortDirection"
-                :sorted-players="sortedPlayers"
-                :average-score="averageScore"
-                :total-score="totalScore"
-                @sort="sortBy"
-              />
-              <GamesDetailVertical
-                v-else
-                key="vertical"
-                :players="sortedPlayers"
-                :holes="holes"
-                :scores="scores"
-                :game-id="gameId"
-                :sort-column="sortColumn"
-                :sort-direction="sortDirection"
-                :sorted-players="sortedPlayers"
-                :average-score="averageScore"
-                :total-score="totalScore"
-                @sort="sortBy"
-              />
-            </Transition>
-          </div>
+          <ScoreCard />
         </template>
       </div>
     </template>
@@ -108,29 +56,21 @@
 <script setup lang="ts">
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import GamesListCompact from '@/components/games/GamesListCompact.vue'
-import GamesDetailHorizontal from '@/components/games/GamesDetailHorizontal.vue'
-import GamesDetailVertical from '@/components/games/GamesDetailVertical.vue'
-import GamesDetailRanking from '@/components/games/GamesDetailRanking.vue'
-import GamesDetailSkeleton from '@/components/games/GamesDetailSkeleton.vue'
+import ScoreCard from '@/components/games/ScoreCard.vue'
 import GamesHoleView from '@/components/games/GamesHoleView.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import AppIconButton from '@/components/ui/AppIconButton.vue'
-import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 
-import { TrophyIcon, TableCellsIcon, ListBulletIcon, PencilSquareIcon, PlusIcon } from '@heroicons/vue/24/outline'
-import { computed, provide, watchEffect, markRaw } from 'vue'
+import { PencilSquareIcon, PlusIcon } from '@heroicons/vue/24/outline'
+import { computed, provide, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 
 import { useGamesDetailData } from '@/composables/useGamesDetailData'
-import { useSortedPlayers } from '@/composables/useSortedPlayers'
-import { useViewMode } from '@/composables/useViewMode'
 import { gamesDetailKey } from '@/types'
 import { shortGameName } from '@/utils/format'
 import { VALIDATION } from '@/constants'
 
 const route = useRoute()
-const { t } = useI18n()
 const gameId = computed(() => route.params.gameId as string)
 const hasValidGameId = computed(() =>
   typeof gameId.value === 'string' && /^[a-zA-Z0-9_-]{10,30}$/.test(gameId.value)
@@ -145,35 +85,15 @@ async function reload() { await loadGamesDetailData() }
 
 const displayName = computed(() => shortGameName(gameName.value))
 
-const { sortColumn, sortDirection, sortedPlayers, totalScore, averageScore } = useSortedPlayers(players, scores)
-
-const { viewMode, loadPreference: loadViewPreference } = useViewMode(players, holes)
-
-const viewOptions = computed(() => [
-  { value: 'ranking' as const, label: t('Scorecard.ViewRanking'), icon: markRaw(TrophyIcon) },
-  { value: 'horizontal' as const, label: t('Scorecard.ViewHorizontal'), icon: markRaw(TableCellsIcon) },
-  { value: 'vertical' as const, label: t('Scorecard.ViewVertical'), icon: markRaw(ListBulletIcon) },
-])
-
 /** Nächste leere Loch-Position — zeigt bis maximal HOLE_MAX. */
 const nextNewHole = computed(() => {
   const max = holes.value.length ? Math.max(...holes.value) : 0
   return Math.min(VALIDATION.HOLE_MAX, max + 1)
 })
 
-function sortBy(column: 'name' | 'total' | 'average') {
-  if (sortColumn.value === column) {
-    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
-  } else {
-    sortColumn.value = column
-    sortDirection.value = 'asc'
-  }
-}
-
 watchEffect(async () => {
   if (!hasValidGameId.value) return
   await loadGamesDetailData()
-  loadViewPreference()
 })
 </script>
 
@@ -202,10 +122,6 @@ watchEffect(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.games-detail__body {
-  min-height: 6rem;
 }
 
 /* Hole-Pill-Leiste: direkter Zugriff auf Löcher von allen drei Scorecard-Views */
