@@ -7,6 +7,7 @@ vi.mock('../../db/pg.js', () => pgMock(vi))
 
 import { getClient } from '../../db/pg.js'
 import gameRoutes from '../games.js'
+import { handleError } from '../../utils/errorHandler.js'
 
 function createMockClient(queryImpl) {
   const client = {
@@ -19,6 +20,7 @@ function createMockClient(queryImpl) {
 
 function buildApp() {
   const app = Fastify({ logger: false })
+  app.setErrorHandler(handleError)
   app.register(gameRoutes, { prefix: '/' })
   return app
 }

@@ -1,6 +1,6 @@
 import { query } from '../db/pg.js';
 import nodemailer from 'nodemailer';
-import { validateFeedback } from '../utils/validate.js';
+import { schemas } from '@urban-golf/contract';
 
 const transporter = nodemailer.createTransport({
   host: 'smtp-relay.brevo.com',
@@ -14,6 +14,7 @@ const transporter = nodemailer.createTransport({
 
 export default async function (fastify, _opts) {
   fastify.post('/', {
+    schema: schemas.postFeedback,
     config: {
       rateLimit: {
         max: 10,
@@ -21,11 +22,6 @@ export default async function (fastify, _opts) {
       },
     },
   }, async (request, reply) => {
-    const validationErrors = validateFeedback(request.body || {});
-    if (validationErrors) {
-      return reply.code(400).send({ error: 'Validation failed', details: validationErrors });
-    }
-
     const { rating, message, name, email } = request.body;
 
     try {

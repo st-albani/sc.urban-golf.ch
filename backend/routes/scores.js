@@ -1,8 +1,9 @@
 import { query } from '../db/pg.js';
-import { validateScore, isValidId } from '../utils/validate.js';
+import { schemas } from '@urban-golf/contract';
 
 export default async function (fastify, _opts) {
   fastify.get('/', {
+    schema: schemas.getScores,
     config: {
       rateLimit: {
         max: 120,
@@ -10,10 +11,7 @@ export default async function (fastify, _opts) {
       },
     },
   }, async (req, reply) => {
-    const gameId = req.query.game_id;
-    if (!gameId || !isValidId(gameId)) {
-      return reply.code(400).send({ error: 'Missing or invalid game_id query parameter' });
-    }
+    const { game_id: gameId } = req.query;
 
     const rows = await query(
       `SELECT s.*, p.name as player_name FROM scores s
@@ -26,6 +24,7 @@ export default async function (fastify, _opts) {
   });
 
   fastify.post('/', {
+    schema: schemas.postScore,
     config: {
       rateLimit: {
         max: 60,
@@ -33,11 +32,6 @@ export default async function (fastify, _opts) {
       },
     },
   }, async (req, reply) => {
-    const validationErrors = validateScore(req.body || {});
-    if (validationErrors) {
-      return reply.code(400).send({ error: 'Validation failed', details: validationErrors });
-    }
-
     const { game_id, player_id, strokes, hole } = req.body;
 
     const rows = await query(

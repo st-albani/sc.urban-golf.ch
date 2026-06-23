@@ -15,6 +15,7 @@ vi.mock('nodemailer', () => ({
 
 import { getClient } from '../../db/pg.js'
 import feedbackRoutes from '../feedback.js'
+import { handleError } from '../../utils/errorHandler.js'
 
 function createMockClient(queryImpl) {
   const client = {
@@ -27,6 +28,7 @@ function createMockClient(queryImpl) {
 
 function buildApp() {
   const app = Fastify({ logger: false })
+  app.setErrorHandler(handleError)
   app.register(feedbackRoutes, { prefix: '/' })
   return app
 }

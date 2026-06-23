@@ -7,6 +7,7 @@ vi.mock('../../db/pg.js', () => pgMock(vi))
 
 import { getClient } from '../../db/pg.js'
 import scoreRoutes from '../scores.js'
+import { handleError } from '../../utils/errorHandler.js'
 
 function createMockClient(queryImpl) {
   const client = {
@@ -19,6 +20,7 @@ function createMockClient(queryImpl) {
 
 function buildApp() {
   const app = Fastify({ logger: false })
+  app.setErrorHandler(handleError)
   app.register(scoreRoutes, { prefix: '/' })
   return app
 }
@@ -57,7 +59,7 @@ describe('GET /scores', () => {
     })
 
     expect(res.statusCode).toBe(400)
-    expect(res.json().error).toContain('Missing or invalid game_id')
+    expect(res.json().error).toBe('Validation failed')
   })
 
   it('returns 400 when game_id is invalid', async () => {

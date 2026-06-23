@@ -1,9 +1,10 @@
 import { query, queryOne, transaction } from '../db/pg.js';
-import { validateGame, isValidId } from '../utils/validate.js';
+import { schemas, isValidId } from '@urban-golf/contract';
 
 export default async function (fastify, _opts) {
   // Spiel erstellen oder aktualisieren
   fastify.post('/', {
+    schema: schemas.postGame,
     config: {
       rateLimit: {
         max: 30,
@@ -11,11 +12,6 @@ export default async function (fastify, _opts) {
       },
     },
   }, async (req, reply) => {
-    const validationErrors = validateGame(req.body || {});
-    if (validationErrors) {
-      return reply.code(400).send({ error: 'Validation failed', details: validationErrors });
-    }
-
     const { id, name, players } = req.body;
     const validPlayers = players.filter(pid => isValidId(pid));
 
@@ -113,7 +109,9 @@ export default async function (fastify, _opts) {
     }
   });
 
-  // Spielname via ID abrufen
+  // Spielname via ID abrufen — Path-Param wird ohne JSON-Schema gegen
+  // ID_PATTERN aus dem Contract validiert (Fastify-Schemas decken keine
+  // route-params nicht ab, wenn die Route ohne :id-schema gemeldet wird).
   fastify.get('/:id', async (req, reply) => {
     const gameId = req.params.id;
     if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });

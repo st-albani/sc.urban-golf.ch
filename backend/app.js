@@ -16,18 +16,12 @@ import scoreRoutes from './routes/scores.js';
 import gameRoutes from './routes/games.js';
 import playerRoutes from './routes/players.js';
 import feedbackRoutes from './routes/feedback.js';
+import { handleError } from './utils/errorHandler.js';
 
 // trustProxy: wichtig, wenn hinter einem Proxy (Render/Nginx/Heroku etc.)
 const fastify = Fastify({ logger: true, trustProxy: true });
 
-// Global error handler — log full error, return generic response
-fastify.setErrorHandler((error, request, reply) => {
-  request.log.error(error);
-  const statusCode = error.statusCode || 500;
-  reply.code(statusCode).send({
-    error: statusCode >= 500 ? 'Internal server error' : error.message,
-  });
-});
+fastify.setErrorHandler(handleError);
 
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())

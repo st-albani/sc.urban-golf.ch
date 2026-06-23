@@ -1,9 +1,10 @@
 import { query } from '../db/pg.js';
-import { validatePlayer } from '../utils/validate.js';
+import { schemas } from '@urban-golf/contract';
 
 export default async function (fastify, _opts) {
   // Spieler erstellen oder aktualisieren (POST + UPSERT)
   fastify.post('/', {
+    schema: schemas.postPlayer,
     config: {
       rateLimit: {
         max: 30,
@@ -11,11 +12,6 @@ export default async function (fastify, _opts) {
       },
     },
   }, async (req, reply) => {
-    const validationErrors = validatePlayer(req.body || {});
-    if (validationErrors) {
-      return reply.code(400).send({ error: 'Validation failed', details: validationErrors });
-    }
-
     const { id, name } = req.body;
 
     try {
