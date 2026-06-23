@@ -11,9 +11,9 @@ import BackgroundImage from '@/components/ui/BackgroundImage.vue'
 import ToastContainer from '@/components/ui/ToastContainer.vue'
 import PWAUpdateDialog from '@/components/pwa/PWAUpdateDialog.vue'
 import PWAInstallBanner from '@/components/pwa/PWAInstallBanner.vue'
-import { useNetworkStatus } from '@/composables/useNetworkStatus'
+import { useScoreSyncStore } from '@/stores/scoreSync'
 import { useThemeMode } from '@/composables/useThemeMode'
 
-useNetworkStatus()
+useScoreSyncStore().installNetworkWatcher()
 useThemeMode()
 </script>

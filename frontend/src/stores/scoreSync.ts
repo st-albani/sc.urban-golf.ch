@@ -1,13 +1,16 @@
 import { watch } from 'vue'
+import { defineStore } from 'pinia'
 import { useOnline } from '@vueuse/core'
+import { useI18n } from 'vue-i18n'
 import { useSyncQueueStore } from '@/stores/syncQueue'
 import { saveScore as apiSaveScore } from '@/services/api'
 import { useToast } from '@/composables/useToast'
 
-export function useOfflineSync() {
+export const useScoreSyncStore = defineStore('scoreSync', () => {
   const queue = useSyncQueueStore()
   const isOnline = useOnline()
-  const { success, error } = useToast()
+  const { success, warning, error } = useToast()
+  const { t } = useI18n()
 
   async function saveScore(payload: {
     game_id: string
@@ -16,7 +19,6 @@ export function useOfflineSync() {
     strokes: number
   }): Promise<void> {
     if (!isOnline.value) {
-      // Offline: in Queue legen. Optimistisches UI: caller hat lokalen State bereits aktualisiert.
       queue.enqueue(payload)
       return
     }
@@ -53,10 +55,22 @@ export function useOfflineSync() {
     }
   }
 
-  // Automatisch flushen wenn Verbindung wiederhergestellt
-  watch(isOnline, (online) => {
-    if (online) flushQueue()
-  })
+  // One watcher for the whole app: network toasts + queue flush on reconnect.
+  // Idempotent — guarded by a closure flag so re-invocations during tests / HMR
+  // don't double-register.
+  let watcherInstalled = false
+  function installNetworkWatcher() {
+    if (watcherInstalled) return
+    watcherInstalled = true
+    watch(isOnline, (online) => {
+      if (online) {
+        success(t('Network.BackOnline'), 3000)
+        void flushQueue()
+      } else {
+        warning(t('Network.Offline'), 0)
+      }
+    })
+  }
 
-  return { saveScore, flushQueue, queue: queue.queue, isOnline }
-}
+  return { saveScore, flushQueue, installNetworkWatcher, queue: queue.queue, isOnline }
+})

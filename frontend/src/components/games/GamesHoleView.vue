@@ -183,7 +183,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, inject } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useOfflineSync } from '@/composables/useOfflineSync'
+import { useScoreSyncStore } from '@/stores/scoreSync'
 import { usePlayerColors } from '@/composables/usePlayerColors'
 import { gamesDetailKey } from '@/types'
 import { shortGameName } from '@/utils/format'
@@ -204,7 +204,7 @@ const hole = computed(() => parseInt(route.params.holeId as string))
 
 const context = inject(gamesDetailKey)!
 const { players, scores, holes, gameName } = context
-const { saveScore: saveScoreOffline } = useOfflineSync()
+const { saveScore: saveScoreOffline } = useScoreSyncStore()
 const { colorMap } = usePlayerColors(players)
 
 const displayName = computed(() => shortGameName(gameName.value))
