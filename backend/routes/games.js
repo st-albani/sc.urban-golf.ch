@@ -1,4 +1,4 @@
-import { getClient } from '../db/pg.js';
+import { query, queryOne, transaction } from '../db/pg.js';
 import { validateGame, isValidId } from '../utils/validate.js';
 
 export default async function (fastify, _opts) {
@@ -17,53 +17,45 @@ export default async function (fastify, _opts) {
     }
 
     const { id, name, players } = req.body;
-
-    // Filter valid player IDs
     const validPlayers = players.filter(pid => isValidId(pid));
 
-    const client = await getClient();
-
     try {
-      await client.query('BEGIN');
-
-      const result = await client.query(
-        `INSERT INTO games (id, name)
-         VALUES ($1, $2)
-         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
-         RETURNING id, name`,
-        [id, name]
-      );
-
-      // Batch INSERT for players (single query instead of loop)
-      if (validPlayers.length > 0) {
-        const values = [];
-        const placeholders = validPlayers.map((pid, i) => {
-          values.push(id, pid);
-          return `($${i * 2 + 1}, $${i * 2 + 2})`;
-        });
-
-        await client.query(
-          `INSERT INTO game_players (game_id, player_id)
-           VALUES ${placeholders.join(', ')}
-           ON CONFLICT DO NOTHING`,
-          values
+      const game = await transaction(async (client) => {
+        const gameResult = await client.query(
+          `INSERT INTO games (id, name)
+           VALUES ($1, $2)
+           ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
+           RETURNING id, name`,
+          [id, name]
         );
-      }
 
-      await client.query('COMMIT');
-      reply.send({ ...result.rows[0], status: 'upserted' });
+        if (validPlayers.length > 0) {
+          const values = [];
+          const placeholders = validPlayers.map((pid, i) => {
+            values.push(id, pid);
+            return `($${i * 2 + 1}, $${i * 2 + 2})`;
+          });
+
+          await client.query(
+            `INSERT INTO game_players (game_id, player_id)
+             VALUES ${placeholders.join(', ')}
+             ON CONFLICT DO NOTHING`,
+            values
+          );
+        }
+
+        return gameResult.rows[0];
+      });
+
+      reply.send({ ...game, status: 'upserted' });
     } catch (err) {
-      await client.query('ROLLBACK');
       fastify.log.error({ id, players, error: err.message }, 'Failed to upsert game with players');
       reply.code(500).send({ error: 'Database error' });
-    } finally {
-      client.release();
     }
   });
 
   // Spiele abrufen mit optionaler Suche und Pagination
   fastify.get('/', async (req, reply) => {
-    const client = await getClient();
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const perPage = Math.min(10, parseInt(req.query.per_page) || 4);
     const offset = (page - 1) * perPage;
@@ -106,20 +98,18 @@ export default async function (fastify, _opts) {
         countQuery = `SELECT COUNT(*) FROM games g`;
       }
 
-      const [gamesResult, countResult] = await Promise.all([
-        client.query(gamesQuery, valuesGames),
-        client.query(countQuery, valuesCount)
+      const [games, countRows] = await Promise.all([
+        query(gamesQuery, valuesGames),
+        query(countQuery, valuesCount),
       ]);
 
       reply.send({
-        games: gamesResult.rows,
-        total: parseInt(countResult.rows[0].count)
+        games,
+        total: parseInt(countRows[0].count),
       });
     } catch (err) {
       fastify.log.error(err);
       reply.code(500).send({ error: 'Database error' });
-    } finally {
-      client.release();
     }
   });
 
@@ -128,14 +118,9 @@ export default async function (fastify, _opts) {
     const gameId = req.params.id;
     if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });
 
-    const client = await getClient();
-    try {
-      const result = await client.query(`SELECT id, name FROM games WHERE id = $1`, [gameId]);
-      if (result.rowCount === 0) return reply.code(404).send({ error: 'Not found' });
-      reply.send(result.rows[0]);
-    } finally {
-      client.release();
-    }
+    const game = await queryOne(`SELECT id, name FROM games WHERE id = $1`, [gameId]);
+    if (!game) return reply.code(404).send({ error: 'Not found' });
+    reply.send(game);
   });
 
   // Spieler eines Spiels abrufen
@@ -143,24 +128,18 @@ export default async function (fastify, _opts) {
     const gameId = req.params.id;
     if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });
 
-    const client = await getClient();
-    try {
-      const result = await client.query(
-        `SELECT p.id, p.name
-         FROM players p
-         JOIN game_players gp ON gp.player_id = p.id
-         WHERE gp.game_id = $1`,
-        [gameId]
-      );
-      reply.send(result.rows);
-    } finally {
-      client.release();
-    }
+    const rows = await query(
+      `SELECT p.id, p.name
+       FROM players p
+       JOIN game_players gp ON gp.player_id = p.id
+       WHERE gp.game_id = $1`,
+      [gameId]
+    );
+    reply.send(rows);
   });
 
   // Zusammenfassung with total count for pagination
   fastify.get('/summary', async (req, reply) => {
-    const client = await getClient();
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const perPage = Math.min(10, parseInt(req.query.per_page) || 10);
     const offset = (page - 1) * perPage;
@@ -223,20 +202,18 @@ export default async function (fastify, _opts) {
 
       const countQuery = `SELECT COUNT(*) FROM games g ${searchFilter}`;
 
-      const [{ rows }, countResult] = await Promise.all([
-        client.query(gamesQuery, values),
-        client.query(countQuery, countValues)
+      const [games, countRows] = await Promise.all([
+        query(gamesQuery, values),
+        query(countQuery, countValues),
       ]);
 
       reply.send({
-        games: rows,
-        total: parseInt(countResult.rows[0].count)
+        games,
+        total: parseInt(countRows[0].count),
       });
     } catch (err) {
       fastify.log.error(err);
       reply.code(500).send({ error: 'Database error' });
-    } finally {
-      client.release();
     }
   });
 }

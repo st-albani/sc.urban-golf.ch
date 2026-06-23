@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
 
-vi.mock('../../db/pg.js', () => ({
-  getClient: vi.fn(),
-}))
+import { pgMock } from './_pgMock.js'
+
+vi.mock('../../db/pg.js', () => pgMock(vi))
 
 import { getClient } from '../../db/pg.js'
 import gameRoutes from '../games.js'

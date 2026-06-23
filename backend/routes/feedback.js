@@ -1,4 +1,4 @@
-import { getClient } from '../db/pg.js';
+import { query } from '../db/pg.js';
 import nodemailer from 'nodemailer';
 import { validateFeedback } from '../utils/validate.js';
 
@@ -21,7 +21,6 @@ export default async function (fastify, _opts) {
       },
     },
   }, async (request, reply) => {
-    // Validate BEFORE destructuring
     const validationErrors = validateFeedback(request.body || {});
     if (validationErrors) {
       return reply.code(400).send({ error: 'Validation failed', details: validationErrors });
@@ -29,11 +28,8 @@ export default async function (fastify, _opts) {
 
     const { rating, message, name, email } = request.body;
 
-    const client = await getClient();
-
     try {
-      // In DB speichern
-      await client.query(
+      await query(
         `INSERT INTO feedback (rating, message, name, email)
          VALUES ($1, $2, $3, $4)`,
         [rating, message, name || null, email || null]
@@ -41,8 +37,6 @@ export default async function (fastify, _opts) {
     } catch (err) {
       request.log.error(err);
       return reply.code(500).send({ error: 'Failed to save feedback' });
-    } finally {
-      client.release();
     }
 
     // Benachrichtigung senden (optional, darf nicht fehlschlagen)

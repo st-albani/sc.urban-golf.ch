@@ -1,4 +1,4 @@
-import { getClient } from '../db/pg.js';
+import { query } from '../db/pg.js';
 import { validatePlayer } from '../utils/validate.js';
 
 export default async function (fastify, _opts) {
@@ -18,9 +18,8 @@ export default async function (fastify, _opts) {
 
     const { id, name } = req.body;
 
-    const client = await getClient();
     try {
-      await client.query(
+      await query(
         `INSERT INTO players (id, name)
          VALUES ($1, $2)
          ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
@@ -30,19 +29,12 @@ export default async function (fastify, _opts) {
     } catch (err) {
       fastify.log.error(err);
       reply.code(500).send({ error: 'Database error' });
-    } finally {
-      client.release();
     }
   });
 
   // Alle Spieler abrufen
-  fastify.get('/', async (req, reply) => {
-    const client = await getClient();
-    try {
-      const result = await client.query('SELECT * FROM players ORDER BY name');
-      reply.send(result.rows);
-    } finally {
-      client.release();
-    }
+  fastify.get('/', async (_req, reply) => {
+    const rows = await query('SELECT * FROM players ORDER BY name');
+    reply.send(rows);
   });
 }
