@@ -2,14 +2,17 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 
-# Copy root package files and both workspace package.json files
-# (npm needs the full workspace graph to resolve dependencies)
+# Copy root package files and every workspace's package.json so npm can
+# resolve the full workspace graph (frontend depends on @urban-golf/contract
+# via the packages/* workspace).
 COPY package.json package-lock.json ./
 COPY backend/package.json ./backend/
 COPY frontend/package.json ./frontend/
+COPY packages/contract/ ./packages/contract/
 
-# Install frontend dependencies (including devDependencies for build)
-RUN npm ci --workspace=frontend
+# Install frontend + the shared contract workspace (devDependencies included
+# for the vite build).
+RUN npm ci --workspace=frontend --workspace=@urban-golf/contract
 
 FROM node:20-alpine AS builder
 WORKDIR /app
@@ -18,8 +21,10 @@ WORKDIR /app
 ARG VITE_API_BASEURL
 ENV VITE_API_BASEURL=$VITE_API_BASEURL
 
-# Copy node_modules from workspace install
+# Copy node_modules + packages/ from workspace install so the symlinked
+# @urban-golf/contract resolves at build time.
 COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages ./packages
 
 # Copy frontend source code (flat layout: frontend/ contents → /app/)
 COPY frontend/ .
