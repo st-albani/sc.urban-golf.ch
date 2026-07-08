@@ -6,7 +6,7 @@ Entwicklungs-Flow.
 ## Setup
 
 ```bash
-git clone https://github.com/toelpel/sc.urban-golf.ch.git
+git clone https://github.com/st-albani/sc.urban-golf.ch.git
 cd sc.urban-golf.ch
 npm install                                # installiert beide Workspaces
 docker compose -f docker-compose.dev.yml up -d postgres

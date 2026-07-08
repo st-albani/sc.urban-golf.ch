@@ -120,7 +120,7 @@ Siehe [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
 ### Issue tracker
 
-Issues live in `toelpel/sc.urban-golf.ch` on GitHub via the `gh` CLI. See [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
+Issues live in `st-albani/sc.urban-golf.ch` on GitHub via the `gh` CLI. See [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
 
 ### Triage labels
 

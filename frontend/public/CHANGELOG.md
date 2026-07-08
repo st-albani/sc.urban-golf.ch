@@ -29,7 +29,7 @@
 ## [2.0.1] – 2025-08-15
 ### 🎉 Milestones
 - The project is now open source and we're happy for your contribution 🎉
--- https://github.com/toelpel/sc.urban-golf.ch
+-- https://github.com/st-albani/sc.urban-golf.ch
 
 ### ✨ New features
 - Infinite scolling in Games-List
