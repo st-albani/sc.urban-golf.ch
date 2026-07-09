@@ -4,7 +4,7 @@
     <loc>https://sc.urban-golf.ch/games</loc>
   </url>
   <url>
-    <loc>https://sct.urban-golf.ch/games/new</loc>
+    <loc>https://sc.urban-golf.ch/games/new</loc>
   </url>
   <url>
     <loc>https://sc.urban-golf.ch/feedback</loc>
@@ -13,6 +13,6 @@
     <loc>https://sc.urban-golf.ch/about</loc>
   </url>
   <url>
-    <loc>https://sc.urban-golf.ch//about/roadmap</loc>
+    <loc>https://sc.urban-golf.ch/about/roadmap</loc>
   </url>
 </urlset>
