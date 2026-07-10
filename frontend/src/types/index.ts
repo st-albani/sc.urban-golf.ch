@@ -10,6 +10,11 @@ export interface GamesDetailContext {
   gameName: Ref<string>
   error: Ref<string | null>
   load: () => Promise<void>
+  /**
+   * Aktiv editierte / gerade gespeicherte Score-Felder ("playerId:hole").
+   * Die Live-Aktualisierung überschreibt diese Felder nicht.
+   */
+  lockedScores: Ref<Set<string>>
 }
 
 export const gamesDetailKey: InjectionKey<GamesDetailContext> = Symbol('gamesDetailData')

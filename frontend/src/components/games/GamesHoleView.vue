@@ -207,6 +207,7 @@ import { useScoreSyncStore } from '@/stores/scoreSync'
 import { usePlayerColors } from '@/composables/usePlayerColors'
 import { useHoleCompletion } from '@/composables/useHoleCompletion'
 import { gamesDetailKey } from '@/types'
+import { scoreKey } from '@/utils/mergeScores'
 import { shortGameName } from '@/utils/format'
 import { VALIDATION } from '@/constants'
 import AppIconButton from '@/components/ui/AppIconButton.vue'
@@ -226,7 +227,7 @@ const gameId = computed(() => route.params.gameId as string)
 const hole = computed(() => parseInt(route.params.holeId as string))
 
 const context = inject(gamesDetailKey)!
-const { players, scores, holes, gameName } = context
+const { players, scores, holes, gameName, lockedScores } = context
 const { saveScore: saveScoreOffline } = useScoreSyncStore()
 const { colorMap } = usePlayerColors(players)
 const { hasScore, holeState } = useHoleCompletion(players, scores)
@@ -384,6 +385,9 @@ function changeStrokes(playerId: string, delta: number) {
 const savingMap = ref<Record<string, boolean>>({})
 
 async function saveScore(playerId: string) {
+  // Feld gegen Live-Overwrite sperren, solange gespeichert wird.
+  const lockKey = scoreKey(playerId, hole.value)
+  lockedScores.value.add(lockKey)
   savingMap.value[playerId] = true
   try {
     await saveScoreOffline({
@@ -400,6 +404,7 @@ async function saveScore(playerId: string) {
     }
   } finally {
     savingMap.value[playerId] = false
+    lockedScores.value.delete(lockKey)
   }
 }
 
