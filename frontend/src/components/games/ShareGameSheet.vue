@@ -12,6 +12,18 @@
         <span>{{ $t('Share.EditWarning') }}</span>
       </p>
 
+      <!-- QR-Code: Mitspieler scannt mit dem Handy und ist sofort im Spiel -->
+      <figure v-if="qrDataUrl" class="share__qr">
+        <img
+          :src="qrDataUrl"
+          class="share__qr-img"
+          :alt="$t('Share.QrAlt')"
+          width="200"
+          height="200"
+        />
+        <figcaption class="share__qr-hint">{{ $t('Share.ScanHint') }}</figcaption>
+      </figure>
+
       <label class="t-eyebrow share__label" for="share-link">{{ $t('Share.LinkLabel') }}</label>
       <input
         id="share-link"
@@ -54,12 +66,14 @@ import {
 import AppBottomSheet from '@/components/ui/AppBottomSheet.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { useShareGame } from '@/composables/useShareGame'
+import { useQrCode } from '@/composables/useQrCode'
 
 const props = defineProps<{ modelValue: boolean; gameId: string; gameName: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const { t } = useI18n()
 const { shareUrl, canNativeShare, copied, copyLink, nativeShare } = useShareGame(toRef(props, 'gameId'))
+const { dataUrl: qrDataUrl } = useQrCode(shareUrl)
 
 function onCopy() {
   void copyLink()
@@ -99,6 +113,31 @@ function selectAll(e: FocusEvent) {
   flex-shrink: 0;
   color: var(--primary);
   margin-top: 0.05rem;
+}
+
+.share__qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.15rem 0 0.35rem;
+}
+
+.share__qr-img {
+  width: 200px;
+  height: 200px;
+  max-width: 60vw;
+  max-height: 60vw;
+  border-radius: var(--radius-md);
+  background: #fff;
+  padding: 0.5rem;
+  box-shadow: var(--shadow-elev-1);
+}
+
+.share__qr-hint {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  font-weight: 600;
 }
 
 .share__label {

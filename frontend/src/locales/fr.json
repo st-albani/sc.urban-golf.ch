@@ -125,7 +125,9 @@
     "LinkLabel": "Lien de la partie",
     "Copy": "Copier le lien",
     "Copied": "Copié !",
-    "Share": "Partager"
+    "Share": "Partager",
+    "ScanHint": "Scanner pour rejoindre",
+    "QrAlt": "QR code du lien de la partie"
   },
   "Feedback": {
     "Title": "Retour sur la scorecard",

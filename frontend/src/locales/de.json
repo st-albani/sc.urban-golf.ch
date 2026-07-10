@@ -125,7 +125,9 @@
     "LinkLabel": "Spiel-Link",
     "Copy": "Link kopieren",
     "Copied": "Kopiert!",
-    "Share": "Teilen"
+    "Share": "Teilen",
+    "ScanHint": "Zum Beitreten scannen",
+    "QrAlt": "QR-Code zum Spiel-Link"
   },
   "Feedback": {
     "Title": "Feedback zur Scorecard",

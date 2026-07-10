@@ -125,7 +125,9 @@
     "LinkLabel": "Spellink",
     "Copy": "Link kopiëren",
     "Copied": "Gekopieerd!",
-    "Share": "Delen"
+    "Share": "Delen",
+    "ScanHint": "Scan om mee te doen",
+    "QrAlt": "QR-code voor de spellink"
   },
   "Feedback": {
     "Title": "Feedback over de scorecard",
