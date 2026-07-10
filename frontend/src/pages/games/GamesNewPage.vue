@@ -371,21 +371,22 @@ async function saveGame() {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.5rem;
 }
 
 .new-game__player {
   --player-accent: var(--color-player-1);
+  --row-h: 3rem;
   display: grid;
-  grid-template-columns: 2rem 1fr auto;
+  grid-template-columns: 2.25rem 1fr auto;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   position: relative;
 }
 
 .new-game__player-index {
-  width: 2rem;
-  height: 2rem;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 999px;
   background: color-mix(in oklab, var(--player-accent) 18%, transparent);
   color: color-mix(in oklab, var(--player-accent) 70%, var(--text-strong));
@@ -397,15 +398,20 @@ async function saveGame() {
   border: 1px solid color-mix(in oklab, var(--player-accent) 30%, transparent);
 }
 
-.new-game__player-input { padding-block: 0.65rem; }
+.new-game__player-input {
+  min-height: var(--row-h);
+  padding-block: 0.5rem;
+}
 
-/* „Du"-Zeile: eigene Identität, Name nicht editierbar (nur im Profil änderbar). */
+/* „Du"-Zeile: eigene Identität, Name nicht editierbar (nur im Profil änderbar).
+   Gleiche Höhe wie die Eingabefelder für ein ruhiges Listenbild. */
 .new-game__self {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 0.6rem;
   min-width: 0;
-  padding: 0.4rem 0.6rem;
+  min-height: var(--row-h);
+  padding: 0 0.75rem;
   border-radius: var(--radius-md);
   border: 1px dashed color-mix(in oklab, var(--player-accent) 45%, transparent);
   background: color-mix(in oklab, var(--player-accent) 8%, transparent);
@@ -463,7 +469,7 @@ async function saveGame() {
 }
 .new-game__add-self:hover { color: var(--primary); border-color: var(--primary); }
 
-.new-game__hint { font-size: var(--text-xs); margin-top: -0.5rem; }
+.new-game__hint { font-size: var(--text-xs); margin-top: 0; }
 
 /* Autocomplete: Vorschläge registrierter Spieler unter der Namenseingabe. */
 .new-game__input-wrap { position: relative; min-width: 0; }
@@ -511,8 +517,8 @@ async function saveGame() {
 }
 
 .new-game__remove {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 999px;
   background: transparent;
   border: 1px solid var(--card-border);
