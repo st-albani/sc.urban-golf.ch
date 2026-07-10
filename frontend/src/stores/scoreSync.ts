@@ -48,10 +48,10 @@ export const useScoreSyncStore = defineStore('scoreSync', () => {
     }
 
     if (successCount > 0) {
-      success(`${successCount} Score(s) synchronisiert.`, 3000)
+      success(t('Sync.Synced', { n: successCount }), 3000)
     }
     if (failCount > 0) {
-      error(`${failCount} Score(s) konnten nicht synchronisiert werden.`, 6000)
+      error(t('Sync.SyncFailed', { n: failCount }), 6000)
     }
   }
 

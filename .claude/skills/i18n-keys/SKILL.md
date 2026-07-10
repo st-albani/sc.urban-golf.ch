@@ -104,6 +104,18 @@ grep -rn "showError\|showSuccess\|toast.error\|alert(" frontend/src | grep -v "\
 
 Finds ggf. Strings wie `showError('Bitte ...')` die auf `$t(...)` umgestellt werden müssen.
 
+Auch **statische `aria-label` / `placeholder` / `title`** prüfen — sie leaken für Screenreader-User in der falschen Sprache:
+
+```bash
+grep -rnE "[^:](aria-label|placeholder|title)=\"[A-Za-zÄÖÜ]" frontend/src/components frontend/src/pages --include=*.vue
+```
+
+Treffer auf gebundene i18n-Ausdrücke umstellen (`:aria-label="$t('…')"`). Ausnahme: reine Marken-/Eigennamen (z. B. `ScoreCard`) bleiben unübersetzt.
+
+### Kein hartes Hardcoded-Gate (bewusste Entscheidung)
+
+Für hartkodierte Strings gibt es **absichtlich kein** durchsetzendes CI-Gate: die statische Erkennung kann user-facing nicht zuverlässig von technischen Strings (Log-Ausgaben, CSS-Klassen, Test-IDs) trennen — ein hartes Gate würde an False Positives ersticken. Der Audit oben ist der wiederholbare Weg; er wird vor „fertig" ausgeführt, nicht von der Pipeline erzwungen.
+
 ## Placeholder-Konvention
 
 User-facing Placeholder sollten Beispiele sein, keine Label-Duplikate:
@@ -120,10 +132,22 @@ Placeholder: "z.B. Sonntag im Eulachpark"
 
 ## Validation bei Adds
 
-Nach jedem Locale-Update:
+Key-Parität **und** Platzhalter-/Plural-Konsistenz sind als automatisches Gate
+durchgesetzt (Vitest, läuft im `unit-frontend`-Job):
 
 ```bash
-# Key-Konsistenz: haben alle 4 Locales denselben Key-Baum?
+npm run test --workspace=frontend   # schlägt fehl bei fehlenden/überzähligen Keys
+                                     # und bei abweichenden {platzhaltern}/Pluralen
+```
+
+Die Tests liegen in `frontend/src/locales/__tests__/` (`locale-parity.test.ts`,
+`locale-placeholders.test.ts`) und vergleichen alle Locales gegen `de.json`
+(Master). Fehlermeldungen listen pro Sprache konkret die fehlenden bzw.
+überzähligen Keys und die divergierenden Platzhalter auf.
+
+Schneller lokaler Ad-hoc-Check ohne Testlauf:
+
+```bash
 node -e "
 const locales = ['de', 'en', 'fr', 'nl'].map(l => require('./frontend/src/locales/' + l + '.json'))
 function keys(obj, prefix = '') {
@@ -137,11 +161,9 @@ function keys(obj, prefix = '') {
 }
 const [de, en, fr, nl] = locales.map(keys)
 const deSet = new Set(de)
-console.log('en missing:', en.filter(k => !deSet.has(k)).concat(de.filter(k => !new Set(en).has(k))))
+console.log('en diff:', en.filter(k => !deSet.has(k)).concat(de.filter(k => !new Set(en).has(k))))
 "
 ```
-
-Falls das skript etwas findet: in beiden Locales ergänzen / entfernen.
 
 ## Typische Fehler
 

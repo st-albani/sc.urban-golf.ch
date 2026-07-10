@@ -16,7 +16,7 @@
           <button
             @click="dismiss(toast.id)"
             class="toast__close"
-            aria-label="Dismiss notification"
+            :aria-label="$t('General.DismissNotification')"
           >&times;</button>
         </div>
       </TransitionGroup>

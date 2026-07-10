@@ -17,7 +17,11 @@
     "FewerStrokes": "Weniger Schläge",
     "MoreStrokes": "Mehr Schläge",
     "Settings": "Einstellungen",
-    "Version": "Version"
+    "Version": "Version",
+    "ScrollToTop": "Nach oben",
+    "DismissNotification": "Benachrichtigung schließen",
+    "PrimaryNav": "Hauptnavigation",
+    "BrandHome": "ScoreCard Startseite"
   },
   "Settings": {
     "Theme": "Design",
@@ -152,6 +156,8 @@
       "NoGamesFound": "Keine Spiele gefunden",
       "HolesPlayed": "Gespielte Löcher",
       "SearchText": "Spiel- oder Spielername",
+      "SearchAria": "Spiele durchsuchen",
+      "ClearSearch": "Suche zurücksetzen",
       "LoadMore": "Weitere Spiele laden",
       "Loading": "Spiele werden geladen…"
     },
@@ -196,7 +202,9 @@
   "Sync": {
     "Offline": "Offline",
     "OfflinePending": "Offline · {n} ausstehend",
-    "Syncing": "Synchronisiere {n} …"
+    "Syncing": "Synchronisiere {n} …",
+    "Synced": "{n} Scores synchronisiert.",
+    "SyncFailed": "{n} Scores konnten nicht synchronisiert werden."
   },
   "Errors": {
     "RequestFailed": "Anfrage fehlgeschlagen",
