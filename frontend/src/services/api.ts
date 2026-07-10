@@ -164,3 +164,25 @@ export async function fetchMyGames(): Promise<GameSummary[]> {
   const { data } = await axios.get<GamesSummaryResponse>(`${API_ROUTES.AUTH}/my-games`)
   return data.games
 }
+
+export interface TrendPoint {
+  gameId: string
+  name: string
+  date: string
+  avg: number
+}
+
+export interface Stats {
+  rounds: number
+  overallAvg: number | null
+  bestRoundAvg: number | null
+  worstRoundAvg: number | null
+  winRate: number | null
+  wins: number
+  trend: TrendPoint[]
+}
+
+export async function fetchStats(): Promise<Stats> {
+  const { data } = await axios.get<Stats>(`${API_ROUTES.AUTH}/stats`)
+  return data
+}

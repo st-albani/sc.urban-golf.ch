@@ -33,4 +33,13 @@ test.describe('Identität ↔ Spieler & Meine Spiele (Smoke)', () => {
     // Nur die eigene Runde (my-games), nicht die zweite Runde aus /summary
     await expect(page.getByText('Frühlings-Training')).toHaveCount(0)
   })
+
+  test('Statistik-Seite zeigt Kennzahlen und Trend', async ({ page, mockApi }) => {
+    void mockApi
+    await signIn(page)
+    await page.goto('/account')
+    await expect(page.getByText('Runden', { exact: true })).toBeVisible()
+    await expect(page.getByText('Sieg-Quote')).toBeVisible()
+    await expect(page.locator('.trend__line')).toBeVisible()
+  })
 })

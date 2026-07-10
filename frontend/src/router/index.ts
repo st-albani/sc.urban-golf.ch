@@ -67,6 +67,15 @@ const routes: RouteRecordRaw[] = [
     ]
   },
   {
+    path: '/account',
+    name: 'Account',
+    component: () => import('@/pages/account/AccountPage.vue'),
+    meta: {
+      title: 'Stats.Title',
+      parent: 'Home'
+    }
+  },
+  {
     path: '/games',
     name: 'GamesList',
     component: () => import('@/pages/games/GamesPage.vue'),

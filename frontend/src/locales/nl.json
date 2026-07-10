@@ -140,7 +140,20 @@
     "DisplayNameLabel": "Weergavenaam",
     "DisplayNamePlaceholder": "Je naam",
     "NameSaved": "Naam opgeslagen.",
-    "NameClaimed": "Naam opgeslagen · {count} rondes gekoppeld."
+    "NameClaimed": "Naam opgeslagen · {count} rondes gekoppeld.",
+    "MyStats": "Mijn statistieken"
+  },
+  "Stats": {
+    "Title": "Mijn statistieken",
+    "Rounds": "Rondes",
+    "Average": "Gem./hole",
+    "WinRate": "Winstpercentage",
+    "Best": "Beste gem.",
+    "Worst": "Slechtste gem.",
+    "Wins": "Overwinningen",
+    "Trend": "Trend (gem. per ronde)",
+    "Empty": "Nog geen geregistreerde rondes. Koppel rondes via je weergavenaam.",
+    "SignInPrompt": "Log in om je statistieken te zien."
   },
   "Share": {
     "Title": "Spel delen",

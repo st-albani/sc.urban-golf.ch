@@ -194,6 +194,61 @@ export default async function (fastify, _opts) {
     }
   });
 
+  // Persönliche Statistik — live aus den zugeordneten Runden berechnet.
+  fastify.get('/stats', { preHandler: requireAuth }, async (request, reply) => {
+    try {
+      const rows = await query(
+        `WITH my_players AS (
+           SELECT player_id FROM account_players WHERE account_id = $1
+         ),
+         per_player AS (
+           SELECT game_id, player_id, SUM(strokes) AS total, COUNT(*) AS holes
+           FROM scores GROUP BY game_id, player_id
+         ),
+         my_rounds AS (
+           SELECT DISTINCT g.id AS game_id, g.name, g.created_at
+           FROM games g
+           JOIN game_players gp ON gp.game_id = g.id
+           JOIN my_players mp ON mp.player_id = gp.player_id
+         )
+         SELECT r.game_id, r.name, r.created_at,
+           (SELECT SUM(pp.total) FROM per_player pp JOIN my_players mp ON mp.player_id = pp.player_id WHERE pp.game_id = r.game_id) AS my_total,
+           (SELECT SUM(pp.holes) FROM per_player pp JOIN my_players mp ON mp.player_id = pp.player_id WHERE pp.game_id = r.game_id) AS my_holes,
+           (SELECT MIN(pp.total) FROM per_player pp WHERE pp.game_id = r.game_id) AS best_total
+         FROM my_rounds r
+         ORDER BY r.created_at ASC`,
+        [request.account.id],
+      );
+
+      // Nur Runden mit tatsächlich erfassten Löchern zählen.
+      const played = rows.filter((r) => Number(r.my_holes) > 0);
+      const rounds = played.length;
+      const totalStrokes = played.reduce((a, r) => a + Number(r.my_total), 0);
+      const totalHoles = played.reduce((a, r) => a + Number(r.my_holes), 0);
+      const roundAvgs = played.map((r) => Number(r.my_total) / Number(r.my_holes));
+      const wins = played.filter((r) => Number(r.my_total) === Number(r.best_total)).length;
+
+      const round2 = (n) => Math.round(n * 100) / 100;
+      reply.send({
+        rounds,
+        overallAvg: totalHoles > 0 ? round2(totalStrokes / totalHoles) : null,
+        bestRoundAvg: rounds ? round2(Math.min(...roundAvgs)) : null,
+        worstRoundAvg: rounds ? round2(Math.max(...roundAvgs)) : null,
+        winRate: rounds ? round2(wins / rounds) : null,
+        wins,
+        trend: played.map((r) => ({
+          gameId: r.game_id,
+          name: r.name,
+          date: r.created_at,
+          avg: round2(Number(r.my_total) / Number(r.my_holes)),
+        })),
+      });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
   // Abmelden.
   fastify.post('/logout', async (request, reply) => {
     const token = request.cookies?.[SESSION_COOKIE];

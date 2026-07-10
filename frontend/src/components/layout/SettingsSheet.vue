@@ -72,6 +72,17 @@
               {{ $t('General.Send') }}
             </AppButton>
           </div>
+          <AppButton
+            variant="ghost"
+            size="md"
+            block
+            pill
+            tag="router-link"
+            to="/account"
+            @click="emit('update:modelValue', false)"
+          >
+            {{ $t('Auth.MyStats') }}
+          </AppButton>
         </div>
         <template v-else>
           <p class="t-muted settings__account-hint">{{ $t('Auth.LoggedOutHint') }}</p>

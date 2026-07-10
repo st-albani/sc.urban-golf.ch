@@ -140,7 +140,20 @@
     "DisplayNameLabel": "Nom affiché",
     "DisplayNamePlaceholder": "Ton nom",
     "NameSaved": "Nom enregistré.",
-    "NameClaimed": "Nom enregistré · {count} parties associées."
+    "NameClaimed": "Nom enregistré · {count} parties associées.",
+    "MyStats": "Mes statistiques"
+  },
+  "Stats": {
+    "Title": "Mes statistiques",
+    "Rounds": "Parties",
+    "Average": "Moy./trou",
+    "WinRate": "Taux de victoire",
+    "Best": "Meilleure moy.",
+    "Worst": "Pire moy.",
+    "Wins": "Victoires",
+    "Trend": "Tendance (moy. par partie)",
+    "Empty": "Aucune partie enregistrée. Associe des parties via ton nom affiché.",
+    "SignInPrompt": "Connecte-toi pour voir tes statistiques."
   },
   "Share": {
     "Title": "Partager la partie",

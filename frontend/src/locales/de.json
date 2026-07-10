@@ -140,7 +140,20 @@
     "DisplayNameLabel": "Anzeigename",
     "DisplayNamePlaceholder": "Dein Name",
     "NameSaved": "Name gespeichert.",
-    "NameClaimed": "Name gespeichert · {count} Runden zugeordnet."
+    "NameClaimed": "Name gespeichert · {count} Runden zugeordnet.",
+    "MyStats": "Meine Statistik"
+  },
+  "Stats": {
+    "Title": "Meine Statistik",
+    "Rounds": "Runden",
+    "Average": "Schnitt/Loch",
+    "WinRate": "Sieg-Quote",
+    "Best": "Bester Schnitt",
+    "Worst": "Schwächster Schnitt",
+    "Wins": "Siege",
+    "Trend": "Trend (Schnitt pro Runde)",
+    "Empty": "Noch keine erfassten Runden. Ordne über deinen Anzeigenamen Runden zu.",
+    "SignInPrompt": "Melde dich an, um deine Statistik zu sehen."
   },
   "Share": {
     "Title": "Spiel teilen",

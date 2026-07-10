@@ -140,7 +140,20 @@
     "DisplayNameLabel": "Display name",
     "DisplayNamePlaceholder": "Your name",
     "NameSaved": "Name saved.",
-    "NameClaimed": "Name saved · {count} rounds linked."
+    "NameClaimed": "Name saved · {count} rounds linked.",
+    "MyStats": "My stats"
+  },
+  "Stats": {
+    "Title": "My stats",
+    "Rounds": "Rounds",
+    "Average": "Avg / hole",
+    "WinRate": "Win rate",
+    "Best": "Best avg",
+    "Worst": "Worst avg",
+    "Wins": "Wins",
+    "Trend": "Trend (avg per round)",
+    "Empty": "No recorded rounds yet. Link rounds via your display name.",
+    "SignInPrompt": "Sign in to see your stats."
   },
   "Share": {
     "Title": "Share game",

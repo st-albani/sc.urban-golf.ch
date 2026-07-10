@@ -191,6 +191,37 @@ describe('Auth routes', () => {
     })
   })
 
+  describe('GET /stats', () => {
+    it('requires a session', async () => {
+      createMockClient()
+      const res = await app.inject({ method: 'GET', url: '/stats' })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('computes rounds, averages and win rate from claimed rounds', async () => {
+      createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
+        ['WITH my_players AS', {
+          rows: [
+            { game_id: 'g1', name: 'R1', created_at: '2026-01-01', my_total: 12, my_holes: 3, best_total: 8 },
+            { game_id: 'g2', name: 'R2', created_at: '2026-01-02', my_total: 9, my_holes: 3, best_total: 9 },
+            { game_id: 'g3', name: 'R3', created_at: '2026-01-03', my_total: 0, my_holes: 0, best_total: null },
+          ],
+        }],
+      ])
+      const res = await app.inject({ method: 'GET', url: '/stats', cookies: { [SESSION_COOKIE]: 'tok' } })
+      expect(res.statusCode).toBe(200)
+      const body = res.json()
+      expect(body.rounds).toBe(2) // g3 has no holes played
+      expect(body.overallAvg).toBe(3.5) // (12+9)/(3+3)
+      expect(body.bestRoundAvg).toBe(3)
+      expect(body.worstRoundAvg).toBe(4)
+      expect(body.wins).toBe(1) // only R2 (my_total == best_total)
+      expect(body.winRate).toBe(0.5)
+      expect(body.trend).toHaveLength(2)
+    })
+  })
+
   describe('POST /logout', () => {
     it('deletes the session and clears the cookie', async () => {
       const client = createMockClient()

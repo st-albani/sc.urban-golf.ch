@@ -226,6 +226,25 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
       body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: p.displayName }, claimedCount: 2 }),
     })
   })
+  await page.route('**/api/auth/stats', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        rounds: 3,
+        overallAvg: 3.67,
+        bestRoundAvg: 3.0,
+        worstRoundAvg: 4.2,
+        winRate: 0.33,
+        wins: 1,
+        trend: [
+          { gameId: 'g1', name: 'R1', date: '2026-01-01T00:00:00Z', avg: 4.2 },
+          { gameId: 'g2', name: 'R2', date: '2026-01-02T00:00:00Z', avg: 3.8 },
+          { gameId: 'g3', name: 'R3', date: '2026-01-03T00:00:00Z', avg: 3.0 },
+        ],
+      }),
+    }),
+  )
   await page.route('**/api/auth/my-games', (route) =>
     route.fulfill({
       status: 200,
