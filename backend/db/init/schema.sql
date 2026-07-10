@@ -81,7 +81,8 @@ ALTER SEQUENCE public.game_players_id_seq OWNED BY public.game_players.id;
 CREATE TABLE public.games (
     id text NOT NULL,
     name text NOT NULL,
-    created_at timestamptz DEFAULT now()
+    created_at timestamptz DEFAULT now(),
+    created_by uuid
 );
 
 --
@@ -300,6 +301,15 @@ ALTER TABLE ONLY public.account_players
 
 ALTER TABLE ONLY public.account_players
     ADD CONSTRAINT fk_account_players_player FOREIGN KEY (player_id) REFERENCES public.players(id) ON DELETE CASCADE;
+
+--
+-- Spiel-Ownership: games.created_by → accounts (nach accounts definiert)
+--
+
+ALTER TABLE ONLY public.games
+    ADD CONSTRAINT fk_games_created_by FOREIGN KEY (created_by) REFERENCES public.accounts(id) ON DELETE SET NULL;
+
+CREATE INDEX idx_games_created_by ON public.games USING btree (created_by);
 
 --
 -- PostgreSQL database dump complete

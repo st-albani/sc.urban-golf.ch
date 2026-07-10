@@ -183,12 +183,18 @@ export default async function (fastify, _opts) {
     try {
       const games = await query(
         `WITH my_games AS (
-           SELECT DISTINCT g.id, g.name, g.created_at
+           -- Selbst erstellte Runden (Ownership) …
+           SELECT g.id, g.name, g.created_at
+           FROM games g
+           WHERE g.created_by = $1
+           UNION
+           -- … plus Runden, in denen ein mir zugeordneter Spieler mitspielt.
+           SELECT g.id, g.name, g.created_at
            FROM games g
            JOIN game_players gp ON gp.game_id = g.id
            JOIN account_players ap ON ap.player_id = gp.player_id
            WHERE ap.account_id = $1
-           ORDER BY g.created_at DESC
+           ORDER BY created_at DESC
            LIMIT 100
          ),
          player_stats AS (

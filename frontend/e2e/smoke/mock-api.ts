@@ -88,6 +88,10 @@ function buildSummary(data: MockDataset) {
 export async function installMockApi(page: Page, seed?: MockDataset) {
   const state: MockDataset = seed ? structuredClone(seed) : defaultDataset()
 
+  // Spiele, die während der Session eingeloggt erstellt wurden (created_by).
+  // Fließen zusätzlich in „Meine Spiele" ein — spiegelt das Ownership-Modell.
+  const createdByMe: Array<{ id: string; name: string; created_at: string; players: unknown[]; holes: number[] }> = []
+
   await page.route('**/api/games/summary**', (route) => {
     route.fulfill({
       status: 200,
@@ -108,6 +112,10 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
       }
       state.games.push(game)
       state.gamePlayers[game.id] = payload.players
+      // Ist die Session eingeloggt, gilt der Ersteller (created_by) → „Meine Spiele".
+      if (authState.account) {
+        createdByMe.unshift({ id: game.id, name: game.name, created_at: game.created_at, players: [], holes: [] })
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -285,13 +293,17 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        games: [{
-          id: 'mock-game-alpha-2026',
-          name: 'Stadtpark-Runde',
-          created_at: '2026-04-12T18:30:00Z',
-          players: [{ id: 'pl-anna-meier-001', name: 'Anna Meier', avg: 3.67, total: 11 }],
-          holes: [1, 2, 3],
-        }],
+        // Selbst erstellte Runden (Ownership) zuerst, dann die Fixture-Runde.
+        games: [
+          ...createdByMe,
+          {
+            id: 'mock-game-alpha-2026',
+            name: 'Stadtpark-Runde',
+            created_at: '2026-04-12T18:30:00Z',
+            players: [{ id: 'pl-anna-meier-001', name: 'Anna Meier', avg: 3.67, total: 11 }],
+            holes: [1, 2, 3],
+          },
+        ],
       }),
     }),
   )

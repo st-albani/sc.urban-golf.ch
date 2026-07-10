@@ -1,5 +1,6 @@
 import { query, queryOne, transaction } from '../db/pg.js';
 import { schemas, isValidId } from '@urban-golf/contract';
+import { getAccountFromRequest } from '../utils/auth.js';
 
 export default async function (fastify, _opts) {
   // Spiel erstellen oder aktualisieren
@@ -16,13 +17,21 @@ export default async function (fastify, _opts) {
     const validPlayers = players.filter(pid => isValidId(pid));
 
     try {
+      // Optionale Identität: ist der Request eingeloggt, wird der Ersteller
+      // serverseitig aus der Session abgeleitet (nie aus Client-Feldern).
+      // Anonym bleibt created_by NULL — der Flow bleibt unverändert.
+      const account = await getAccountFromRequest(req);
+      const createdBy = account?.id ?? null;
+
       const game = await transaction(async (client) => {
         const gameResult = await client.query(
-          `INSERT INTO games (id, name)
-           VALUES ($1, $2)
+          // created_by wird nur beim Anlegen gesetzt; beim Bearbeiten (ON CONFLICT)
+          // bleibt der ursprüngliche Ersteller unangetastet.
+          `INSERT INTO games (id, name, created_by)
+           VALUES ($1, $2, $3)
            ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
            RETURNING id, name`,
-          [id, name]
+          [id, name, createdBy]
         );
 
         if (validPlayers.length > 0) {

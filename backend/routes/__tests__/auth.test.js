@@ -214,8 +214,8 @@ describe('Auth routes', () => {
       expect(res.statusCode).toBe(401)
     })
 
-    it('returns the games of claimed players', async () => {
-      createMockClient([
+    it('returns owned and participated games (created_by ∪ claimed players)', async () => {
+      const client = createMockClient([
         ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
         ['WITH my_games AS', { rows: [{ id: 'g1', name: 'Stadtpark', players: [], holes: [1, 2] }] }],
       ])
@@ -227,6 +227,10 @@ describe('Auth routes', () => {
       expect(res.statusCode).toBe(200)
       expect(res.json().games).toHaveLength(1)
       expect(res.json().games[0].name).toBe('Stadtpark')
+
+      // Der Ownership-Zweig (created_by) muss Teil der Abfrage sein.
+      const myGamesCall = client.query.mock.calls.find((c) => c[0].includes('WITH my_games AS'))
+      expect(myGamesCall[0]).toContain('created_by = $1')
     })
   })
 

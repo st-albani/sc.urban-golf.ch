@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
+import fastifyCookie from '@fastify/cookie'
 
 import { pgMock } from './_pgMock.js'
 
@@ -21,8 +22,16 @@ function createMockClient(queryImpl) {
 function buildApp() {
   const app = Fastify({ logger: false })
   app.setErrorHandler(handleError)
+  // Cookie-Plugin: nötig, damit POST /games die (optionale) Session lesen kann.
+  app.register(fastifyCookie)
   app.register(gameRoutes, { prefix: '/' })
   return app
+}
+
+// Findet die Parameter des INSERT-INTO-games-Aufrufs auf dem Mock-Client.
+function gamesInsertParams(client) {
+  const call = client.query.mock.calls.find((c) => c[0].includes('INSERT INTO games'))
+  return call?.[1]
 }
 
 describe('POST /games', () => {
@@ -60,6 +69,59 @@ describe('POST /games', () => {
     expect(client.query).toHaveBeenCalledWith('BEGIN')
     expect(client.query).toHaveBeenCalledWith('COMMIT')
     expect(client.release).toHaveBeenCalled()
+  })
+
+  it('stamps created_by from the session when logged in', async () => {
+    const client = createMockClient((sql) => {
+      // Session-Lookup in getAccountFromRequest
+      if (sql.includes('FROM sessions')) {
+        return { rows: [{ id: 'acc-owner-1', email: 'owner@example.com', display_name: null, avatar: null }] }
+      }
+      if (sql.includes('INSERT INTO games')) {
+        return { rows: [{ id: 'game1234567890', name: 'Owned Game' }] }
+      }
+      return { rows: [] }
+    })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/',
+      cookies: { ug_session: 'valid-token' },
+      payload: {
+        id: 'game1234567890',
+        name: 'Owned Game',
+        players: ['player1234567890'],
+      },
+    })
+
+    expect(res.statusCode).toBe(200)
+    // created_by ist der dritte Parameter des INSERT.
+    expect(gamesInsertParams(client)?.[2]).toBe('acc-owner-1')
+  })
+
+  it('leaves created_by null for anonymous creation', async () => {
+    const client = createMockClient((sql) => {
+      if (sql.includes('INSERT INTO games')) {
+        return { rows: [{ id: 'game1234567890', name: 'Anon Game' }] }
+      }
+      return { rows: [] }
+    })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/',
+      payload: {
+        id: 'game1234567890',
+        name: 'Anon Game',
+        players: ['player1234567890'],
+      },
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(gamesInsertParams(client)?.[2]).toBeNull()
+    // Ohne Cookie darf kein Session-Lookup passieren.
+    const sessionCall = client.query.mock.calls.find((c) => c[0].includes('FROM sessions'))
+    expect(sessionCall).toBeUndefined()
   })
 
   it('returns 400 for invalid body', async () => {
