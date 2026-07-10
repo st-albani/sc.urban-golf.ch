@@ -153,7 +153,11 @@
     "Wins": "Overwinningen",
     "Trend": "Trend (gem. per ronde)",
     "Empty": "Nog geen geregistreerde rondes. Koppel rondes via je weergavenaam.",
-    "SignInPrompt": "Log in om je statistieken te zien."
+    "SignInPrompt": "Log in om je statistieken te zien.",
+    "HeadToHead": "Onderling",
+    "PickOpponent": "Kies een medespeler",
+    "SharedRounds": "gezamenlijke rondes",
+    "You": "Jij"
   },
   "Share": {
     "Title": "Spel delen",

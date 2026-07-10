@@ -245,6 +245,17 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
       }),
     }),
   )
+  await page.route('**/api/auth/opponents', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ opponents: [{ name: 'Boris Wild', rounds: 3 }] }) }),
+  )
+  await page.route('**/api/auth/head-to-head**', (route) => {
+    const name = new URL(route.request().url()).searchParams.get('name') || ''
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ name, shared: 5, wins: 3, losses: 2, ties: 0, myAvg: 3.5, opponentAvg: 3.8 }),
+    })
+  })
   await page.route('**/api/auth/my-games', (route) =>
     route.fulfill({
       status: 200,

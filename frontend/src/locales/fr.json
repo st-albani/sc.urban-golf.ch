@@ -153,7 +153,11 @@
     "Wins": "Victoires",
     "Trend": "Tendance (moy. par partie)",
     "Empty": "Aucune partie enregistrée. Associe des parties via ton nom affiché.",
-    "SignInPrompt": "Connecte-toi pour voir tes statistiques."
+    "SignInPrompt": "Connecte-toi pour voir tes statistiques.",
+    "HeadToHead": "Face-à-face",
+    "PickOpponent": "Choisir un joueur",
+    "SharedRounds": "parties communes",
+    "You": "Toi"
   },
   "Share": {
     "Title": "Partager la partie",

@@ -222,6 +222,56 @@ describe('Auth routes', () => {
     })
   })
 
+  describe('GET /opponents', () => {
+    it('requires a session', async () => {
+      createMockClient()
+      const res = await app.inject({ method: 'GET', url: '/opponents' })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('lists recurring co-players', async () => {
+      createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
+        ['my_names AS', { rows: [{ name: 'Boris', rounds: 5 }, { name: 'Chris', rounds: 2 }] }],
+      ])
+      const res = await app.inject({ method: 'GET', url: '/opponents', cookies: { [SESSION_COOKIE]: 'tok' } })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().opponents).toHaveLength(2)
+      expect(res.json().opponents[0]).toEqual({ name: 'Boris', rounds: 5 })
+    })
+  })
+
+  describe('GET /head-to-head', () => {
+    it('requires a name', async () => {
+      createMockClient([['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }]])
+      const res = await app.inject({ method: 'GET', url: '/head-to-head', cookies: { [SESSION_COOKIE]: 'tok' } })
+      expect(res.statusCode).toBe(400)
+    })
+
+    it('computes the balance over shared rounds', async () => {
+      createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
+        ['shared AS', {
+          rows: [
+            { game_id: 'g1', my_total: 10, my_holes: 3, opp_total: 12, opp_holes: 3 }, // win
+            { game_id: 'g2', my_total: 14, my_holes: 3, opp_total: 11, opp_holes: 3 }, // loss
+            { game_id: 'g3', my_total: 9, my_holes: 3, opp_total: 9, opp_holes: 3 }, // tie
+          ],
+        }],
+      ])
+      const res = await app.inject({
+        method: 'GET',
+        url: '/head-to-head?name=Boris',
+        cookies: { [SESSION_COOKIE]: 'tok' },
+      })
+      expect(res.statusCode).toBe(200)
+      const b = res.json()
+      expect(b).toMatchObject({ name: 'Boris', shared: 3, wins: 1, losses: 1, ties: 1 })
+      expect(b.myAvg).toBe(3.67)
+      expect(b.opponentAvg).toBe(3.56)
+    })
+  })
+
   describe('POST /logout', () => {
     it('deletes the session and clears the cookie', async () => {
       const client = createMockClient()

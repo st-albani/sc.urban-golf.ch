@@ -249,6 +249,90 @@ export default async function (fastify, _opts) {
     }
   });
 
+  // Wiederkehrende Mitspieler (für Head-to-Head-Auswahl).
+  fastify.get('/opponents', { preHandler: requireAuth }, async (request, reply) => {
+    try {
+      const rows = await query(
+        `WITH my_players AS (SELECT player_id FROM account_players WHERE account_id = $1),
+         my_rounds AS (
+           SELECT DISTINCT gp.game_id FROM game_players gp
+           JOIN my_players mp ON mp.player_id = gp.player_id
+         ),
+         my_names AS (
+           SELECT DISTINCT p.name FROM players p JOIN my_players mp ON mp.player_id = p.id
+         )
+         SELECT p.name, COUNT(DISTINCT gp.game_id)::int AS rounds
+         FROM game_players gp
+         JOIN players p ON p.id = gp.player_id
+         WHERE gp.game_id IN (SELECT game_id FROM my_rounds)
+           AND p.name NOT IN (SELECT name FROM my_names)
+         GROUP BY p.name
+         ORDER BY rounds DESC, p.name ASC
+         LIMIT 50`,
+        [request.account.id],
+      );
+      return reply.send({ opponents: rows });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Head-to-Head-Bilanz gegen einen benannten Mitspieler.
+  fastify.get('/head-to-head', { preHandler: requireAuth }, async (request, reply) => {
+    const name = String(request.query.name || '').trim();
+    if (!name) return reply.code(400).send({ error: 'missing_name' });
+    try {
+      const rows = await query(
+        `WITH my_players AS (SELECT player_id FROM account_players WHERE account_id = $1),
+         per_player AS (
+           SELECT game_id, player_id, SUM(strokes) AS total, COUNT(*) AS holes
+           FROM scores GROUP BY game_id, player_id
+         ),
+         my_rounds AS (
+           SELECT DISTINCT gp.game_id FROM game_players gp
+           JOIN my_players mp ON mp.player_id = gp.player_id
+         ),
+         shared AS (
+           SELECT DISTINCT g.id AS game_id, g.created_at
+           FROM games g
+           JOIN game_players gp ON gp.game_id = g.id
+           JOIN players p ON p.id = gp.player_id
+           WHERE g.id IN (SELECT game_id FROM my_rounds) AND p.name = $2
+         )
+         SELECT s.game_id, s.created_at,
+           (SELECT SUM(pp.total) FROM per_player pp JOIN my_players mp ON mp.player_id = pp.player_id WHERE pp.game_id = s.game_id) AS my_total,
+           (SELECT SUM(pp.holes) FROM per_player pp JOIN my_players mp ON mp.player_id = pp.player_id WHERE pp.game_id = s.game_id) AS my_holes,
+           (SELECT SUM(pp.total) FROM per_player pp JOIN players p ON p.id = pp.player_id WHERE pp.game_id = s.game_id AND p.name = $2) AS opp_total,
+           (SELECT SUM(pp.holes) FROM per_player pp JOIN players p ON p.id = pp.player_id WHERE pp.game_id = s.game_id AND p.name = $2) AS opp_holes
+         FROM shared s
+         ORDER BY s.created_at DESC
+         LIMIT 20`,
+        [request.account.id, name],
+      );
+
+      const played = rows.filter((r) => Number(r.my_holes) > 0 && Number(r.opp_holes) > 0);
+      let wins = 0, losses = 0, ties = 0, myStrokes = 0, myHoles = 0, oppStrokes = 0, oppHoles = 0;
+      for (const r of played) {
+        const my = Number(r.my_total), opp = Number(r.opp_total);
+        if (my < opp) wins++; else if (my > opp) losses++; else ties++;
+        myStrokes += my; myHoles += Number(r.my_holes);
+        oppStrokes += opp; oppHoles += Number(r.opp_holes);
+      }
+      const round2 = (n) => Math.round(n * 100) / 100;
+      return reply.send({
+        name,
+        shared: played.length,
+        wins, losses, ties,
+        myAvg: myHoles > 0 ? round2(myStrokes / myHoles) : null,
+        opponentAvg: oppHoles > 0 ? round2(oppStrokes / oppHoles) : null,
+      });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
   // Abmelden.
   fastify.post('/logout', async (request, reply) => {
     const token = request.cookies?.[SESSION_COOKIE];

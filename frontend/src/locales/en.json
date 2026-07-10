@@ -153,7 +153,11 @@
     "Wins": "Wins",
     "Trend": "Trend (avg per round)",
     "Empty": "No recorded rounds yet. Link rounds via your display name.",
-    "SignInPrompt": "Sign in to see your stats."
+    "SignInPrompt": "Sign in to see your stats.",
+    "HeadToHead": "Head-to-head",
+    "PickOpponent": "Pick a co-player",
+    "SharedRounds": "shared rounds",
+    "You": "You"
   },
   "Share": {
     "Title": "Share game",

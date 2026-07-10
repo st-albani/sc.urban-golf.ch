@@ -42,4 +42,12 @@ test.describe('Identität ↔ Spieler & Meine Spiele (Smoke)', () => {
     await expect(page.getByText('Sieg-Quote')).toBeVisible()
     await expect(page.locator('.trend__line')).toBeVisible()
   })
+
+  test('Head-to-Head: Mitspieler wählen zeigt die Bilanz', async ({ page, mockApi }) => {
+    void mockApi
+    await signIn(page)
+    await page.goto('/account')
+    await page.locator('.account__h2h-select').selectOption('Boris Wild')
+    await expect(page.locator('.h2h__record')).toHaveText('3 : 2')
+  })
 })

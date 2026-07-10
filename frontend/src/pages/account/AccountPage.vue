@@ -51,6 +51,24 @@
               <circle v-for="(p, i) in trendXY" :key="i" :cx="p.x" :cy="p.y" r="2.5" class="trend__dot" />
             </svg>
           </section>
+
+          <section v-if="opponents.length" class="account__h2h card card--padded">
+            <h2 class="t-eyebrow">{{ $t('Stats.HeadToHead') }}</h2>
+            <select v-model="selectedOpponent" class="field account__h2h-select" :aria-label="$t('Stats.PickOpponent')">
+              <option value="">{{ $t('Stats.PickOpponent') }}</option>
+              <option v-for="o in opponents" :key="o.name" :value="o.name">{{ o.name }} ({{ o.rounds }})</option>
+            </select>
+            <div v-if="h2h && h2h.shared > 0" class="h2h">
+              <div class="h2h__score">
+                <span class="h2h__side">{{ $t('Stats.You') }}</span>
+                <strong class="h2h__record">{{ h2h.wins }} : {{ h2h.losses }}</strong>
+                <span class="h2h__side h2h__side--opp">{{ h2h.name }}</span>
+              </div>
+              <p class="h2h__meta t-muted">
+                {{ h2h.shared }} {{ $t('Stats.SharedRounds') }} · Ø {{ fmt(h2h.myAvg) }} : {{ fmt(h2h.opponentAvg) }}
+              </p>
+            </div>
+          </section>
         </template>
 
         <p v-else class="account__hint">{{ $t('Stats.Empty') }}</p>
@@ -64,11 +82,17 @@ import { ref, computed, onMounted, watch } from 'vue'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { useAuthStore } from '@/stores/auth'
-import { fetchStats, type Stats } from '@/services/api'
+import {
+  fetchStats, fetchOpponents, fetchHeadToHead,
+  type Stats, type Opponent, type HeadToHead,
+} from '@/services/api'
 
 const auth = useAuthStore()
 const stats = ref<Stats | null>(null)
 const loading = ref(false)
+const opponents = ref<Opponent[]>([])
+const selectedOpponent = ref('')
+const h2h = ref<HeadToHead | null>(null)
 
 function fmt(n: number | null): string {
   return n === null ? '–' : n.toFixed(2)
@@ -82,10 +106,19 @@ async function load() {
   loading.value = true
   try {
     stats.value = await fetchStats()
+    opponents.value = await fetchOpponents()
   } finally {
     loading.value = false
   }
 }
+
+watch(selectedOpponent, async (name) => {
+  if (!name) {
+    h2h.value = null
+    return
+  }
+  h2h.value = await fetchHeadToHead(name)
+})
 
 // Trend-Sparkline (niedriger Schnitt = besser = weiter oben).
 const trendW = 300
@@ -181,5 +214,48 @@ watch(() => auth.isLoggedIn, load)
 
 .trend__dot {
   fill: var(--primary);
+}
+
+.account__h2h {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.account__h2h-select {
+  width: 100%;
+}
+
+.h2h {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding-top: 0.25rem;
+}
+
+.h2h__score {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.h2h__side {
+  font-weight: 600;
+  color: var(--text-default);
+}
+
+.h2h__side--opp { color: var(--text-strong); }
+
+.h2h__record {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 800;
+  color: var(--primary);
+  font-variant-numeric: tabular-nums;
+}
+
+.h2h__meta {
+  font-size: var(--text-sm);
 }
 </style>

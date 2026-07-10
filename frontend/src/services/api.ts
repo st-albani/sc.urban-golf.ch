@@ -186,3 +186,28 @@ export async function fetchStats(): Promise<Stats> {
   const { data } = await axios.get<Stats>(`${API_ROUTES.AUTH}/stats`)
   return data
 }
+
+export interface Opponent {
+  name: string
+  rounds: number
+}
+
+export interface HeadToHead {
+  name: string
+  shared: number
+  wins: number
+  losses: number
+  ties: number
+  myAvg: number | null
+  opponentAvg: number | null
+}
+
+export async function fetchOpponents(): Promise<Opponent[]> {
+  const { data } = await axios.get<{ opponents: Opponent[] }>(`${API_ROUTES.AUTH}/opponents`)
+  return data.opponents
+}
+
+export async function fetchHeadToHead(name: string): Promise<HeadToHead> {
+  const { data } = await axios.get<HeadToHead>(`${API_ROUTES.AUTH}/head-to-head`, { params: { name } })
+  return data
+}

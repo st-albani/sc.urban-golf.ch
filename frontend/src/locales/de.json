@@ -153,7 +153,11 @@
     "Wins": "Siege",
     "Trend": "Trend (Schnitt pro Runde)",
     "Empty": "Noch keine erfassten Runden. Ordne über deinen Anzeigenamen Runden zu.",
-    "SignInPrompt": "Melde dich an, um deine Statistik zu sehen."
+    "SignInPrompt": "Melde dich an, um deine Statistik zu sehen.",
+    "HeadToHead": "Head-to-Head",
+    "PickOpponent": "Mitspieler wählen",
+    "SharedRounds": "gemeinsame Runden",
+    "You": "Du"
   },
   "Share": {
     "Title": "Spiel teilen",
