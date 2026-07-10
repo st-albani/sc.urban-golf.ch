@@ -10,12 +10,14 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 import Fastify from 'fastify';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyRateLimit from '@fastify/rate-limit';
+import fastifyCookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 
 import scoreRoutes from './routes/scores.js';
 import gameRoutes from './routes/games.js';
 import playerRoutes from './routes/players.js';
 import feedbackRoutes from './routes/feedback.js';
+import authRoutes from './routes/auth.js';
 import { handleError } from './utils/errorHandler.js';
 
 // trustProxy: wichtig, wenn hinter einem Proxy (Render/Nginx/Heroku etc.)
@@ -37,9 +39,15 @@ await fastify.register(cors, {
   },
   methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type'],
+  // Cookie-basierte Sessions: Credentialed-Requests erlauben.
+  credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 200
 });
+
+// Cookies für die (optionale) Session-Auth. Unsignierte Cookies genügen —
+// das Session-Token ist bereits ein 256-bit-Geheimnis.
+await fastify.register(fastifyCookie);
 
 await fastify.register(fastifyHelmet, {
   contentSecurityPolicy: {
@@ -85,6 +93,7 @@ fastify.register(scoreRoutes, { prefix: '/api/scores' });
 fastify.register(gameRoutes, { prefix: '/api/games' });
 fastify.register(playerRoutes, { prefix: '/api/players' });
 fastify.register(feedbackRoutes, { prefix: '/api/feedback' });
+fastify.register(authRoutes, { prefix: '/api/auth' });
 
 fastify.get('/', async (req, reply) => {
   reply.send({ status: 'ok', service: 'Urban Golf API' });

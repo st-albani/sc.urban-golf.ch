@@ -34,6 +34,8 @@ export interface Schemas {
   readonly getScores: RouteSchema;
   readonly postScore: RouteSchema;
   readonly postFeedback: RouteSchema;
+  readonly postAuthRequestOtp: RouteSchema;
+  readonly postAuthVerifyOtp: RouteSchema;
 }
 
 export const schemas: Schemas;

@@ -165,6 +165,42 @@ export const schemas = Object.freeze({
       additionalProperties: false,
     },
   },
+
+  postAuthRequestOtp: {
+    body: {
+      type: 'object',
+      required: ['email'],
+      properties: {
+        email: {
+          type: 'string',
+          minLength: 3,
+          maxLength: VALIDATION.EMAIL_MAX_LENGTH,
+          pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+
+  postAuthVerifyOtp: {
+    body: {
+      type: 'object',
+      required: ['email', 'code'],
+      properties: {
+        email: {
+          type: 'string',
+          minLength: 3,
+          maxLength: VALIDATION.EMAIL_MAX_LENGTH,
+          pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
+        },
+        code: {
+          type: 'string',
+          pattern: '^[0-9]{4,8}$',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
 });
 
 export { playerSchema, gameRowSchema, scoreRowSchema };
