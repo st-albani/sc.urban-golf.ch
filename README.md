@@ -41,7 +41,7 @@ sc.urban-golf.ch/
 ### Mit Docker (empfohlen, alles in einem)
 
 ```bash
-git clone https://github.com/toelpel/sc.urban-golf.ch.git
+git clone https://github.com/st-albani/sc.urban-golf.ch.git
 cd sc.urban-golf.ch
 docker compose -f docker-compose.dev.yml up -d
 ```
@@ -113,5 +113,5 @@ MIT — frei nutzen, modifizieren und teilen mit Urheberhinweis.
 
 ## 📬 Contact
 
-Open an issue on [GitHub](https://github.com/toelpel/sc.urban-golf.ch/issues) oder via
+Open an issue on [GitHub](https://github.com/st-albani/sc.urban-golf.ch/issues) oder via
 `/feedback` direkt aus der App.

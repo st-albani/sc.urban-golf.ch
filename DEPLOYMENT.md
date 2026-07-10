@@ -106,8 +106,8 @@ building locally when possible.
 
 **Pull the latest tagged images:**
 ```bash
-docker pull ghcr.io/toelpel/urbangolf-backend:latest
-docker pull ghcr.io/toelpel/urbangolf-frontend:latest
+docker pull ghcr.io/st-albani/urbangolf-backend:latest
+docker pull ghcr.io/st-albani/urbangolf-frontend:latest
 ```
 
 **Or build locally:**
