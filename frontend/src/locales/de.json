@@ -184,7 +184,6 @@
       "KeypadShortcutHint": "Tipp: 1–7 auf der Tastatur",
       "StepperBack": "Zum vorherigen Loch ({n})",
       "StepperForward": "Zum nächsten Loch ({n})",
-      "Completion": "{done}/{total} erfasst",
       "MissingScore": "fehlt",
       "PillComplete": "Loch {n}, für alle erfasst",
       "PillPartial": "Loch {n}, teilweise erfasst"

@@ -184,7 +184,6 @@
       "KeypadShortcutHint": "Tip: 1–7 op het toetsenbord",
       "StepperBack": "Vorige hole ({n})",
       "StepperForward": "Volgende hole ({n})",
-      "Completion": "{done}/{total} ingevoerd",
       "MissingScore": "ontbreekt",
       "PillComplete": "Hole {n}, voor iedereen ingevoerd",
       "PillPartial": "Hole {n}, gedeeltelijk ingevoerd"

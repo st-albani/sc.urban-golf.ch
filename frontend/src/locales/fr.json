@@ -184,7 +184,6 @@
       "KeypadShortcutHint": "Astuce : 1–7 au clavier",
       "StepperBack": "Trou précédent ({n})",
       "StepperForward": "Trou suivant ({n})",
-      "Completion": "{done}/{total} saisis",
       "MissingScore": "manquant",
       "PillComplete": "Trou {n}, saisi pour tous",
       "PillPartial": "Trou {n}, partiellement saisi"

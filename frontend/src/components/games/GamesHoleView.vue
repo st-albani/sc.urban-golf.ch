@@ -53,9 +53,9 @@
       </div>
     </header>
 
-    <!-- Fortschritt: Loch-Pills + kompakter Vollständigkeits-Zähler in einer
-         Reihe. Der Zähler ersetzt die frühere eigene Zeile und spart Höhe;
-         der volle Text bleibt als aria-label für Screenreader erhalten. -->
+    <!-- Fortschritt: Loch-Pills. Der Add-Button liegt bewusst ausserhalb des
+         scrollenden Containers, damit er bei vielen Löchern nicht am rechten
+         Rand abgeschnitten wird. -->
     <div class="hole-progress-row">
       <div ref="pillsRef" class="hole-progress scroll-hide" role="list">
         <router-link
@@ -74,26 +74,15 @@
           {{ n }}
           <CheckIcon v-if="holeStateFor(n) === 'complete'" class="hole-progress__check" aria-hidden="true" />
         </router-link>
-        <router-link
-          :to="`/games/${gameId}/${nextNewHole}`"
-          class="hole-progress__chip hole-progress__chip--add"
-          :aria-label="$t('General.Hole') + ' +1'"
-        >
-          <PlusIcon class="w-3.5 h-3.5" />
-        </router-link>
       </div>
 
-      <span
-        v-if="players.length"
-        class="hole-completion"
-        :class="{ 'is-complete': currentComplete }"
-        role="status"
-        aria-live="polite"
-        :aria-label="$t('Games.HoleView.Completion', { done: currentCompletion.done, total: currentCompletion.total })"
+      <router-link
+        :to="`/games/${gameId}/${nextNewHole}`"
+        class="hole-progress__chip hole-progress__chip--add"
+        :aria-label="$t('General.Hole') + ' +1'"
       >
-        <CheckIcon v-if="currentComplete" class="hole-completion__icon" aria-hidden="true" />
-        {{ currentCompletion.done }}/{{ currentCompletion.total }}
-      </span>
+        <PlusIcon class="w-3.5 h-3.5" />
+      </router-link>
     </div>
 
     <!-- Spieler-Karten -->
@@ -229,13 +218,10 @@ const context = inject(gamesDetailKey)!
 const { players, scores, holes, gameName } = context
 const { saveScore: saveScoreOffline } = useScoreSyncStore()
 const { colorMap } = usePlayerColors(players)
-const { hasScore, completion, isComplete, holeState } = useHoleCompletion(players, scores)
+const { hasScore, holeState } = useHoleCompletion(players, scores)
 
 const displayName = computed(() => shortGameName(gameName.value))
 
-// Vollständigkeit des aktuell geöffneten Lochs
-const currentCompletion = computed(() => completion(hole.value))
-const currentComplete = computed(() => isComplete(hole.value))
 function hasCurrentScore(playerId: string) {
   return hasScore(playerId, hole.value)
 }
@@ -543,48 +529,17 @@ function ensureScoreFieldsExist() {
   font-variant-numeric: tabular-nums;
 }
 
-/* Loch-Pills + Vollständigkeits-Zähler teilen sich eine Reihe */
+/* Loch-Pills + Add-Button teilen sich eine Reihe */
 .hole-progress-row {
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
 
-/* Kompakter Vollständigkeits-Zähler rechts neben den Pills */
-.hole-completion {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--text-default) 6%, transparent);
-  color: var(--text-muted);
-  font-size: var(--text-sm);
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.hole-completion.is-complete {
-  background: color-mix(in oklab, var(--color-success-500) 16%, transparent);
-  color: color-mix(in oklab, var(--color-success-600) 80%, var(--text-strong));
-}
-
-:root.dark .hole-completion.is-complete {
-  color: var(--color-success-400);
-}
-
-.hole-completion__icon {
-  width: 0.9rem;
-  height: 0.9rem;
-  flex-shrink: 0;
-  stroke-width: 2.5;
-}
-
-/* Progress pills */
+/* Progress pills — wachsen nicht (bleiben links, "+1" direkt daneben),
+   schrumpfen aber und scrollen, wenn viele Löcher nicht mehr passen. */
 .hole-progress {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   display: flex;
   gap: 0.4rem;
