@@ -15,6 +15,13 @@ import {
   requireAuth,
 } from '../utils/auth.js';
 
+const toAccount = (r) => ({
+  id: r.id,
+  email: r.email,
+  displayName: r.display_name,
+  avatar: r.avatar ?? null,
+});
+
 export default async function (fastify, _opts) {
   // Einmalcode anfordern. Antwortet immer 200 (kein Account-Enumeration-Leak).
   fastify.post('/request-otp', {
@@ -91,7 +98,7 @@ export default async function (fastify, _opts) {
       account = await queryOne(
         `INSERT INTO accounts (email) VALUES ($1)
            ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
-         RETURNING id, email, display_name`,
+         RETURNING id, email, display_name, avatar`,
         [email],
       );
 
@@ -106,9 +113,7 @@ export default async function (fastify, _opts) {
       return reply.code(500).send({ error: 'Database error' });
     }
 
-    return reply.send({
-      account: { id: account.id, email: account.email, displayName: account.display_name },
-    });
+    return reply.send({ account: toAccount(account) });
   });
 
   // Aktuelle Session/Account.
@@ -133,7 +138,7 @@ export default async function (fastify, _opts) {
     try {
       const account = await queryOne(
         `UPDATE accounts SET display_name = $2 WHERE id = $1
-         RETURNING id, email, display_name`,
+         RETURNING id, email, display_name, avatar`,
         [request.account.id, displayName],
       );
       // Anonyme Spieler-Einträge mit exakt diesem Namen dem Account zuordnen.
@@ -144,10 +149,29 @@ export default async function (fastify, _opts) {
          RETURNING player_id`,
         [request.account.id, displayName],
       );
-      return reply.send({
-        account: { id: account.id, email: account.email, displayName: account.display_name },
-        claimedCount: claimed.length,
-      });
+      return reply.send({ account: toAccount(account), claimedCount: claimed.length });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Avatar setzen/entfernen (kleiner base64-data:-URL, clientseitig verkleinert).
+  fastify.post('/avatar', {
+    schema: schemas.postAuthAvatar,
+    preHandler: requireAuth,
+    config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const raw = request.body.avatar;
+    // Nur data:image/-URLs akzeptieren; leer/ungültig → Avatar entfernen.
+    const value = typeof raw === 'string' && raw.startsWith('data:image/') ? raw : null;
+    try {
+      const account = await queryOne(
+        `UPDATE accounts SET avatar = $2 WHERE id = $1
+         RETURNING id, email, display_name, avatar`,
+        [request.account.id, value],
+      );
+      return reply.send({ account: toAccount(account) });
     } catch (err) {
       request.log.error(err);
       return reply.code(500).send({ error: 'Database error' });

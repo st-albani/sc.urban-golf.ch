@@ -70,7 +70,7 @@ import GamesListMine from '@/components/games/GamesListMine.vue'
 import JoinGameSheet from '@/components/games/JoinGameSheet.vue'
 import AppIconButton from '@/components/ui/AppIconButton.vue'
 import SegmentedControl from '@/components/ui/SegmentedControl.vue'
-import { MagnifyingGlassIcon, XMarkIcon, QrCodeIcon } from '@heroicons/vue/24/outline'
+import { MagnifyingGlassIcon, XMarkIcon, QrCodeIcon, RectangleStackIcon, UserIcon } from '@heroicons/vue/24/outline'
 import { useAuthStore } from '@/stores/auth'
 
 const { t } = useI18n()
@@ -86,8 +86,8 @@ const perPage = ref(calculatePerPage())
 const joinOpen = ref(false)
 const mode = ref<'all' | 'mine'>('all')
 const modeOptions = computed(() => [
-  { value: 'all' as const, label: t('Games.ListGames.FilterAll') },
-  { value: 'mine' as const, label: t('Games.ListGames.FilterMine') },
+  { value: 'all' as const, label: t('Games.ListGames.FilterAll'), icon: RectangleStackIcon },
+  { value: 'mine' as const, label: t('Games.ListGames.FilterMine'), icon: UserIcon },
 ])
 
 function handleResize() { perPage.value = calculatePerPage() }

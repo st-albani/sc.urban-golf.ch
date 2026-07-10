@@ -216,6 +216,18 @@ export const schemas = Object.freeze({
       additionalProperties: false,
     },
   },
+
+  postAuthAvatar: {
+    body: {
+      type: 'object',
+      required: ['avatar'],
+      properties: {
+        // base64-data:-URL eines clientseitig verkleinerten Bildes (~<50 KB).
+        avatar: { type: 'string', maxLength: 500000 },
+      },
+      additionalProperties: false,
+    },
+  },
 });
 
 export { playerSchema, gameRowSchema, scoreRowSchema };

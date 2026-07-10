@@ -253,6 +253,7 @@ CREATE TABLE public.accounts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     email text NOT NULL UNIQUE,
     display_name text,
+    avatar text,
     created_at timestamptz DEFAULT now()
 );
 

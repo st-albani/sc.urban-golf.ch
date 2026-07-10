@@ -49,13 +49,15 @@ export async function getAccountFromRequest(request) {
   const token = request.cookies?.[SESSION_COOKIE];
   if (!token) return null;
   const row = await queryOne(
-    `SELECT a.id, a.email, a.display_name
+    `SELECT a.id, a.email, a.display_name, a.avatar
        FROM sessions s
        JOIN accounts a ON a.id = s.account_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [hashToken(token)],
   );
-  return row ? { id: row.id, email: row.email, displayName: row.display_name } : null;
+  return row
+    ? { id: row.id, email: row.email, displayName: row.display_name, avatar: row.avatar ?? null }
+    : null;
 }
 
 /**

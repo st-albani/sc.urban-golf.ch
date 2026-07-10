@@ -155,6 +155,15 @@
     "NameClaimed": "Nom enregistré · {count} parties associées.",
     "MyStats": "Mes statistiques"
   },
+  "Profile": {
+    "Title": "Profil",
+    "Open": "Ouvrir le profil",
+    "Guest": "Invité",
+    "NoName": "Sans nom",
+    "ChangeAvatar": "Changer la photo de profil",
+    "AvatarUpdated": "Photo de profil mise à jour.",
+    "AvatarFailed": "Impossible de définir la photo de profil."
+  },
   "Stats": {
     "Title": "Mes statistiques",
     "Rounds": "Parties",

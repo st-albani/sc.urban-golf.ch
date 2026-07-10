@@ -1,11 +1,63 @@
 <template>
   <AppBottomSheet
     :model-value="modelValue"
-    :label="$t('General.Settings')"
-    :title="$t('General.Settings')"
+    :label="$t('Profile.Title')"
+    :title="$t('Profile.Title')"
     @update:model-value="v => emit('update:modelValue', v)"
   >
     <div class="settings">
+      <!-- Profil-Header -->
+      <section class="profile">
+        <div class="profile__avatar-wrap">
+          <PlayerAvatar :name="avatarName" :src="auth.avatar" color="var(--color-player-1)" size="xl" />
+          <button
+            v-if="auth.isLoggedIn"
+            type="button"
+            class="profile__avatar-edit"
+            :aria-label="$t('Profile.ChangeAvatar')"
+            :disabled="avatarBusy"
+            @click="pickAvatar"
+          >
+            <CameraIcon class="w-4 h-4" />
+          </button>
+          <input ref="avatarInput" type="file" accept="image/*" class="profile__file" @change="onAvatarFile" />
+        </div>
+        <div class="profile__identity">
+          <span class="profile__name">
+            {{ auth.isLoggedIn ? (auth.displayName || $t('Profile.NoName')) : $t('Profile.Guest') }}
+          </span>
+          <span class="profile__email">
+            {{ auth.isLoggedIn ? auth.account?.email : $t('Auth.LoggedOutHint') }}
+          </span>
+        </div>
+        <AppButton v-if="!auth.isLoggedIn" variant="primary" size="md" block pill @click="openLogin">
+          {{ $t('Auth.SignInCta') }}
+        </AppButton>
+      </section>
+
+      <!-- Account-Aktionen (eingeloggt) -->
+      <section v-if="auth.isLoggedIn" class="settings__section">
+        <label class="t-eyebrow settings__name-label" for="settings-name">{{ $t('Auth.DisplayNameLabel') }}</label>
+        <div class="settings__name-row">
+          <input
+            id="settings-name"
+            v-model="nameInput"
+            class="field settings__name-input"
+            type="text"
+            maxlength="30"
+            :placeholder="$t('Auth.DisplayNamePlaceholder')"
+            @keydown.enter="saveName"
+          />
+          <AppButton variant="secondary" size="md" pill :loading="savingName" :disabled="!nameInput.trim()" @click="saveName">
+            {{ $t('General.Send') }}
+          </AppButton>
+        </div>
+        <AppButton variant="ghost" size="md" block pill tag="router-link" to="/account" @click="emit('update:modelValue', false)">
+          <template #icon-left><ChartBarIcon class="w-5 h-5" /></template>
+          {{ $t('Auth.MyStats') }}
+        </AppButton>
+      </section>
+
       <section class="settings__section">
         <h3 class="t-eyebrow">{{ $t('Settings.Theme') }}</h3>
         <div class="settings__row">
@@ -38,59 +90,17 @@
         </div>
       </section>
 
-      <section class="settings__section">
-        <h3 class="t-eyebrow">{{ $t('Auth.Account') }}</h3>
-        <div v-if="auth.isLoggedIn" class="settings__account-block">
-          <div class="settings__account">
-            <div class="settings__account-info">
-              <UserCircleIcon class="w-5 h-5" aria-hidden="true" />
-              <span class="settings__account-email">{{ auth.account?.email }}</span>
-            </div>
-            <AppButton variant="ghost" size="sm" pill @click="auth.logout()">
-              {{ $t('Auth.SignOut') }}
-            </AppButton>
-          </div>
-          <label class="t-eyebrow settings__name-label" for="settings-name">{{ $t('Auth.DisplayNameLabel') }}</label>
-          <div class="settings__name-row">
-            <input
-              id="settings-name"
-              v-model="nameInput"
-              class="field settings__name-input"
-              type="text"
-              maxlength="30"
-              :placeholder="$t('Auth.DisplayNamePlaceholder')"
-              @keydown.enter="saveName"
-            />
-            <AppButton
-              variant="secondary"
-              size="md"
-              pill
-              :loading="savingName"
-              :disabled="!nameInput.trim()"
-              @click="saveName"
-            >
-              {{ $t('General.Send') }}
-            </AppButton>
-          </div>
-          <AppButton
-            variant="ghost"
-            size="md"
-            block
-            pill
-            tag="router-link"
-            to="/account"
-            @click="emit('update:modelValue', false)"
-          >
-            {{ $t('Auth.MyStats') }}
-          </AppButton>
-        </div>
-        <template v-else>
-          <p class="t-muted settings__account-hint">{{ $t('Auth.LoggedOutHint') }}</p>
-          <AppButton variant="secondary" size="md" block pill @click="openLogin">
-            {{ $t('Auth.SignInCta') }}
-          </AppButton>
-        </template>
-      </section>
+      <AppButton
+        v-if="auth.isLoggedIn"
+        variant="ghost"
+        size="md"
+        block
+        pill
+        class="settings__logout"
+        @click="auth.logout()"
+      >
+        {{ $t('Auth.SignOut') }}
+      </AppButton>
 
       <footer class="settings__meta">
         <span>{{ $t('General.Version') }}</span>
@@ -101,12 +111,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { SunIcon, MoonIcon, ComputerDesktopIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
-import { watch } from 'vue'
+import { SunIcon, MoonIcon, ComputerDesktopIcon, CameraIcon, ChartBarIcon } from '@heroicons/vue/24/outline'
 import AppBottomSheet from '@/components/ui/AppBottomSheet.vue'
 import AppButton from '@/components/ui/AppButton.vue'
+import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
 import { useThemeMode } from '@/composables/useThemeMode'
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
@@ -117,12 +127,65 @@ const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 const { isDark, set: setIsDark } = useThemeMode()
 const { locale, t } = useI18n()
 const auth = useAuthStore()
-const { success } = useToast()
+const { success, error: toastError } = useToast()
 
 // Login startet im global gemounteten AuthSheet — Settings vorher schließen.
 function openLogin() {
   emit('update:modelValue', false)
   auth.openLogin()
+}
+
+const avatarName = computed(() => auth.displayName || auth.account?.email || 'Profil')
+
+const avatarInput = ref<HTMLInputElement | null>(null)
+const avatarBusy = ref(false)
+
+function pickAvatar() {
+  avatarInput.value?.click()
+}
+
+// Bild clientseitig auf 128×128 (Cover-Crop) verkleinern → JPEG-Data-URL.
+function resizeImage(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      URL.revokeObjectURL(url)
+      const size = 128
+      const canvas = document.createElement('canvas')
+      canvas.width = size
+      canvas.height = size
+      const ctx = canvas.getContext('2d')
+      if (!ctx) return reject(new Error('no-2d-context'))
+      const scale = Math.max(size / img.width, size / img.height)
+      const w = img.width * scale
+      const h = img.height * scale
+      ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h)
+      resolve(canvas.toDataURL('image/jpeg', 0.85))
+    }
+    img.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error('image-load-failed'))
+    }
+    img.src = url
+  })
+}
+
+async function onAvatarFile(e: Event) {
+  const input = e.target as HTMLInputElement
+  const file = input.files?.[0]
+  input.value = ''
+  if (!file || avatarBusy.value) return
+  avatarBusy.value = true
+  try {
+    const dataUrl = await resizeImage(file)
+    await auth.setAvatar(dataUrl)
+    success(t('Profile.AvatarUpdated'))
+  } catch {
+    toastError(t('Profile.AvatarFailed'))
+  } finally {
+    avatarBusy.value = false
+  }
 }
 
 const nameInput = ref('')
@@ -226,42 +289,75 @@ const appVersion = __APP_VERSION__
 
 .settings__flag { font-size: 1.15rem; line-height: 1; }
 
-.settings__account {
+/* Profil-Header */
+.profile {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.6rem 0.85rem;
-  border-radius: var(--radius-md);
-  border: 1px solid var(--card-border);
-  background: var(--card-bg);
+  text-align: center;
+  padding: 0.5rem 0 0.25rem;
 }
 
-.settings__account-info {
+.profile__avatar-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.profile__avatar-edit {
+  position: absolute;
+  right: -0.1rem;
+  bottom: -0.1rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-  color: var(--text-default);
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  border: 2px solid var(--card-bg);
+  background: var(--primary);
+  color: var(--primary-ink);
+  cursor: pointer;
+  transition: transform 150ms, opacity 150ms;
 }
 
-.settings__account-email {
+.profile__avatar-edit:hover { transform: scale(1.08); }
+.profile__avatar-edit:active { transform: scale(0.94); }
+.profile__avatar-edit:disabled { opacity: 0.55; cursor: default; }
+
+.profile__file {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.profile__identity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.profile__name {
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--text-strong);
+  letter-spacing: -0.01em;
+}
+
+.profile__email {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-weight: 600;
-  font-size: var(--text-sm);
-}
-
-.settings__account-hint {
-  font-size: var(--text-sm);
-  margin-bottom: 0.1rem;
-}
-
-.settings__account-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
 }
 
 .settings__name-label {

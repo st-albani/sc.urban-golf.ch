@@ -6,7 +6,7 @@ test.describe('Login / optionale Identität (Smoke)', () => {
     await page.goto('/')
 
     // Einstellungen öffnen und Login starten
-    await page.getByRole('button', { name: /Einstellungen|Settings/i }).click()
+    await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
     await page.getByRole('button', { name: 'Anmelden', exact: true }).click()
 
     // Auth-Sheet (liegt über dem Settings-Sheet)
@@ -19,7 +19,7 @@ test.describe('Login / optionale Identität (Smoke)', () => {
 
     // Login schließt das Sheet — Einstellungen erneut öffnen und Konto prüfen
     await expect(page.locator('.sheet')).toHaveCount(0)
-    await page.getByRole('button', { name: /Einstellungen|Settings/i }).click()
+    await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
     await expect(page.getByText('spieler@example.com')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible()
   })
@@ -27,7 +27,7 @@ test.describe('Login / optionale Identität (Smoke)', () => {
   test('falscher Code zeigt einen Fehler, kein Login', async ({ page, mockApi }) => {
     void mockApi
     await page.goto('/')
-    await page.getByRole('button', { name: /Einstellungen|Settings/i }).click()
+    await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
     await page.getByRole('button', { name: 'Anmelden', exact: true }).click()
 
     const sheet = page.locator('.sheet').last()

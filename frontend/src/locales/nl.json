@@ -155,6 +155,15 @@
     "NameClaimed": "Naam opgeslagen · {count} rondes gekoppeld.",
     "MyStats": "Mijn statistieken"
   },
+  "Profile": {
+    "Title": "Profiel",
+    "Open": "Profiel openen",
+    "Guest": "Gast",
+    "NoName": "Nog geen naam",
+    "ChangeAvatar": "Profielfoto wijzigen",
+    "AvatarUpdated": "Profielfoto bijgewerkt.",
+    "AvatarFailed": "Profielfoto kon niet worden ingesteld."
+  },
   "Stats": {
     "Title": "Mijn statistieken",
     "Rounds": "Rondes",

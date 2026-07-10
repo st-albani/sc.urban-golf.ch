@@ -155,6 +155,15 @@
     "NameClaimed": "Name saved · {count} rounds linked.",
     "MyStats": "My stats"
   },
+  "Profile": {
+    "Title": "Profile",
+    "Open": "Open profile",
+    "Guest": "Guest",
+    "NoName": "No name yet",
+    "ChangeAvatar": "Change profile picture",
+    "AvatarUpdated": "Profile picture updated.",
+    "AvatarFailed": "Could not set profile picture."
+  },
   "Stats": {
     "Title": "My stats",
     "Rounds": "Rounds",

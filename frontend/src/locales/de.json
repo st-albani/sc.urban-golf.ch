@@ -155,6 +155,15 @@
     "NameClaimed": "Name gespeichert · {count} Runden zugeordnet.",
     "MyStats": "Meine Statistik"
   },
+  "Profile": {
+    "Title": "Profil",
+    "Open": "Profil öffnen",
+    "Guest": "Gast",
+    "NoName": "Ohne Namen",
+    "ChangeAvatar": "Profilbild ändern",
+    "AvatarUpdated": "Profilbild aktualisiert.",
+    "AvatarFailed": "Profilbild konnte nicht gesetzt werden."
+  },
   "Stats": {
     "Title": "Meine Statistik",
     "Rounds": "Runden",

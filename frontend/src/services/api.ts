@@ -127,6 +127,7 @@ export interface Account {
   id: string
   email: string
   displayName: string | null
+  avatar: string | null
 }
 
 export async function requestOtp(email: string): Promise<void> {
@@ -226,4 +227,9 @@ export async function fetchAccountSummary(): Promise<AccountSummary> {
 
 export async function deleteAccount(keepScores: boolean): Promise<void> {
   await axios.delete(`${API_ROUTES.AUTH}/account`, { params: { keepScores } })
+}
+
+export async function setAvatar(avatar: string): Promise<Account> {
+  const { data } = await axios.post<{ account: Account }>(`${API_ROUTES.AUTH}/avatar`, { avatar })
+  return data.account
 }

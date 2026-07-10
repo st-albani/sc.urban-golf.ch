@@ -24,7 +24,7 @@ describe('useAuthStore', () => {
   })
 
   it('loadMe restores an existing session', async () => {
-    vi.mocked(fetchMe).mockResolvedValue({ id: 'a1', email: 'a@b.com', displayName: 'Anna' })
+    vi.mocked(fetchMe).mockResolvedValue({ id: 'a1', email: 'a@b.com', displayName: 'Anna', avatar: null })
     const s = useAuthStore()
     await s.loadMe()
     expect(s.isLoggedIn).toBe(true)
@@ -48,7 +48,7 @@ describe('useAuthStore', () => {
   })
 
   it('verifyOtp logs in with the returned account', async () => {
-    vi.mocked(verifyOtp).mockResolvedValue({ id: 'a1', email: 'a@b.com', displayName: null })
+    vi.mocked(verifyOtp).mockResolvedValue({ id: 'a1', email: 'a@b.com', displayName: null, avatar: null })
     const s = useAuthStore()
     await s.verifyOtp('a@b.com', '123456')
     expect(s.isLoggedIn).toBe(true)
@@ -63,7 +63,7 @@ describe('useAuthStore', () => {
   })
 
   it('logout clears the account even if the API call is the last step', async () => {
-    vi.mocked(verifyOtp).mockResolvedValue({ id: 'a1', email: 'a@b.com', displayName: null })
+    vi.mocked(verifyOtp).mockResolvedValue({ id: 'a1', email: 'a@b.com', displayName: null, avatar: null })
     const s = useAuthStore()
     await s.verifyOtp('a@b.com', '123456')
     await s.logout()

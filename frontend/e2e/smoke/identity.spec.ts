@@ -2,7 +2,7 @@ import { test, expect } from './fixtures'
 
 async function signIn(page: import('@playwright/test').Page) {
   await page.goto('/')
-  await page.getByRole('button', { name: /Einstellungen|Settings/i }).click()
+  await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
   await page.getByRole('button', { name: 'Anmelden', exact: true }).click()
   const sheet = page.locator('.sheet').last()
   await sheet.locator('#auth-email').fill('spieler@example.com')
@@ -16,7 +16,7 @@ test.describe('Identität ↔ Spieler & Meine Spiele (Smoke)', () => {
   test('Anzeigename setzen ordnet Runden zu', async ({ page, mockApi }) => {
     void mockApi
     await signIn(page)
-    await page.getByRole('button', { name: /Einstellungen|Settings/i }).click()
+    await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
     await page.locator('#settings-name').fill('Anna Meier')
     await page.getByRole('button', { name: 'Absenden' }).click()
     // Toast bestätigt die Zuordnung

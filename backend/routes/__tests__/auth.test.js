@@ -161,10 +161,49 @@ describe('Auth routes', () => {
       })
       expect(res.statusCode).toBe(200)
       expect(res.json()).toEqual({
-        account: { id: 'acc1', email: 'a@b.com', displayName: 'Anna' },
+        account: { id: 'acc1', email: 'a@b.com', displayName: 'Anna', avatar: null },
         claimedCount: 2,
       })
       expect(client.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO account_players'), ['acc1', 'Anna'])
+    })
+  })
+
+  describe('POST /avatar', () => {
+    it('requires a session', async () => {
+      createMockClient()
+      const res = await app.inject({ method: 'POST', url: '/avatar', payload: { avatar: 'data:image/png;base64,AAA' } })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('stores a data-URL avatar', async () => {
+      const client = createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna', avatar: null }] }],
+        ['UPDATE accounts SET avatar', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna', avatar: 'data:image/png;base64,AAA' }] }],
+      ])
+      const res = await app.inject({
+        method: 'POST',
+        url: '/avatar',
+        payload: { avatar: 'data:image/png;base64,AAA' },
+        cookies: { [SESSION_COOKIE]: 'tok' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().account.avatar).toBe('data:image/png;base64,AAA')
+      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE accounts SET avatar'), ['acc1', 'data:image/png;base64,AAA'])
+    })
+
+    it('rejects a non-image value by storing null', async () => {
+      createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna', avatar: null }] }],
+        ['UPDATE accounts SET avatar', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna', avatar: null }] }],
+      ])
+      const res = await app.inject({
+        method: 'POST',
+        url: '/avatar',
+        payload: { avatar: 'not-an-image' },
+        cookies: { [SESSION_COOKIE]: 'tok' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().account.avatar).toBeNull()
     })
   })
 

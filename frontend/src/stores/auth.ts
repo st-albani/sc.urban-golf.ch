@@ -7,6 +7,7 @@ import {
   logout as apiLogout,
   setProfile as apiSetProfile,
   deleteAccount as apiDeleteAccount,
+  setAvatar as apiSetAvatar,
   type Account,
 } from '@/services/api'
 
@@ -24,6 +25,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isLoggedIn = computed(() => account.value !== null)
   const displayName = computed(() => account.value?.displayName || null)
+  const avatar = computed(() => account.value?.avatar || null)
 
   function openLogin() {
     loginOpen.value = true
@@ -70,8 +72,14 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Avatar setzen (data:-URL) oder mit '' entfernen. */
+  async function setAvatar(dataUrl: string) {
+    account.value = await apiSetAvatar(dataUrl)
+  }
+
   return {
-    account, loaded, loginOpen, isLoggedIn, displayName,
-    openLogin, closeLogin, loadMe, requestOtp, verifyOtp, logout, setDisplayName, deleteAccount,
+    account, loaded, loginOpen, isLoggedIn, displayName, avatar,
+    openLogin, closeLogin, loadMe, requestOtp, verifyOtp, logout,
+    setDisplayName, deleteAccount, setAvatar,
   }
 })
