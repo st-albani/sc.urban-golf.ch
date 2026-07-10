@@ -12,7 +12,7 @@
           <ArrowLeftIcon class="w-5 h-5" />
         </AppIconButton>
 
-        <router-link v-else to="/" class="top-bar__brand" aria-label="ScoreCard Home">
+        <router-link v-else to="/" class="top-bar__brand" :aria-label="$t('General.BrandHome')">
           <img
             src="/img/web-app-manifest-192x192.png"
             alt=""
@@ -35,7 +35,7 @@
         </span>
 
         <!-- Desktop: quick links -->
-        <nav class="top-bar__desktop-nav" aria-label="Primary">
+        <nav class="top-bar__desktop-nav" :aria-label="$t('General.PrimaryNav')">
           <router-link
             v-for="item in desktopItems"
             :key="item.to"

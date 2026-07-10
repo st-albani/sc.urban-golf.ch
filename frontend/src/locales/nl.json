@@ -17,7 +17,11 @@
     "FewerStrokes": "Minder slagen",
     "MoreStrokes": "Meer slagen",
     "Settings": "Instellingen",
-    "Version": "Versie"
+    "Version": "Versie",
+    "ScrollToTop": "Naar boven",
+    "DismissNotification": "Melding sluiten",
+    "PrimaryNav": "Hoofdnavigatie",
+    "BrandHome": "ScoreCard startpagina"
   },
   "Settings": {
     "Theme": "Thema",
@@ -152,6 +156,8 @@
       "NoGamesFound": "Geen spellen gevonden",
       "HolesPlayed": "Gespeelde holes",
       "SearchText": "Spel- of spelersnaam",
+      "SearchAria": "Spellen zoeken",
+      "ClearSearch": "Zoekopdracht wissen",
       "LoadMore": "Meer spellen laden",
       "Loading": "Spellen worden geladen…"
     },
@@ -196,7 +202,9 @@
   "Sync": {
     "Offline": "Offline",
     "OfflinePending": "Offline · {n} in wachtrij",
-    "Syncing": "{n} synchroniseren …"
+    "Syncing": "{n} synchroniseren …",
+    "Synced": "{n} scores gesynchroniseerd.",
+    "SyncFailed": "{n} scores konden niet worden gesynchroniseerd."
   },
   "Errors": {
     "RequestFailed": "Verzoek mislukt",

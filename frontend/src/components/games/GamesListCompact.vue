@@ -14,13 +14,13 @@
           class="field games-list-page__input"
           inputmode="search"
           autocomplete="off"
-          aria-label="Search games"
+          :aria-label="$t('Games.ListGames.SearchAria')"
         />
         <button
           v-if="searchTerm"
           @click="searchTerm = ''"
           class="games-list-page__clear"
-          aria-label="Clear search"
+          :aria-label="$t('Games.ListGames.ClearSearch')"
           type="button"
         >
           <XMarkIcon class="w-4 h-4" />

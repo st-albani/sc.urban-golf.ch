@@ -98,7 +98,7 @@ describe('useScoreSyncStore', () => {
 
       expect(mockApiSave).toHaveBeenCalledTimes(2)
       expect(queueStore.queue).toHaveLength(0)
-      expect(mockSuccess).toHaveBeenCalledWith('2 Score(s) synchronisiert.', 3000)
+      expect(mockSuccess).toHaveBeenCalledWith('Sync.Synced', 3000)
     })
 
     it('does nothing when offline', async () => {
@@ -132,8 +132,8 @@ describe('useScoreSyncStore', () => {
 
       expect(queueStore.queue).toHaveLength(1)
       expect(queueStore.queue[0].hole).toBe(2)
-      expect(mockSuccess).toHaveBeenCalledWith('1 Score(s) synchronisiert.', 3000)
-      expect(mockError).toHaveBeenCalledWith('1 Score(s) konnten nicht synchronisiert werden.', 6000)
+      expect(mockSuccess).toHaveBeenCalledWith('Sync.Synced', 3000)
+      expect(mockError).toHaveBeenCalledWith('Sync.SyncFailed', 6000)
     })
   })
 

@@ -17,7 +17,11 @@
     "FewerStrokes": "Moins de coups",
     "MoreStrokes": "Plus de coups",
     "Settings": "Paramètres",
-    "Version": "Version"
+    "Version": "Version",
+    "ScrollToTop": "Vers le haut",
+    "DismissNotification": "Fermer la notification",
+    "PrimaryNav": "Navigation principale",
+    "BrandHome": "Accueil ScoreCard"
   },
   "Settings": {
     "Theme": "Thème",
@@ -152,6 +156,8 @@
       "NoGamesFound": "Aucune partie trouvée",
       "HolesPlayed": "Trous joués",
       "SearchText": "Nom du jeu ou du joueur",
+      "SearchAria": "Rechercher des parties",
+      "ClearSearch": "Effacer la recherche",
       "LoadMore": "Charger d'autres jeux",
       "Loading": "Chargement des parties…"
     },
@@ -196,7 +202,9 @@
   "Sync": {
     "Offline": "Hors ligne",
     "OfflinePending": "Hors ligne · {n} en attente",
-    "Syncing": "Synchronisation de {n} …"
+    "Syncing": "Synchronisation de {n} …",
+    "Synced": "{n} scores synchronisés.",
+    "SyncFailed": "{n} scores n'ont pas pu être synchronisés."
   },
   "Errors": {
     "RequestFailed": "Requête échouée",

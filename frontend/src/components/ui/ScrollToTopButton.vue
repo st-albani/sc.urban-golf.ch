@@ -4,7 +4,7 @@
       v-if="showScrollToTop"
       @click="scrollToTop"
       class="scroll-top-btn"
-      aria-label="Nach oben"
+      :aria-label="$t('General.ScrollToTop')"
     >
       <ArrowUpIcon class="w-5 h-5" />
     </button>

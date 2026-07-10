@@ -17,7 +17,11 @@
     "FewerStrokes": "Fewer strokes",
     "MoreStrokes": "More strokes",
     "Settings": "Settings",
-    "Version": "Version"
+    "Version": "Version",
+    "ScrollToTop": "Back to top",
+    "DismissNotification": "Dismiss notification",
+    "PrimaryNav": "Main navigation",
+    "BrandHome": "ScoreCard home"
   },
   "Settings": {
     "Theme": "Theme",
@@ -152,6 +156,8 @@
       "NoGamesFound": "No games found",
       "HolesPlayed": "Holes Played",
       "SearchText": "Game- or Playername",
+      "SearchAria": "Search games",
+      "ClearSearch": "Clear search",
       "LoadMore": "Load more games",
       "Loading": "Loading games…"
     },
@@ -196,7 +202,9 @@
   "Sync": {
     "Offline": "Offline",
     "OfflinePending": "Offline · {n} pending",
-    "Syncing": "Syncing {n} …"
+    "Syncing": "Syncing {n} …",
+    "Synced": "{n} scores synced.",
+    "SyncFailed": "{n} scores couldn't be synced."
   },
   "Errors": {
     "RequestFailed": "Request failed",
