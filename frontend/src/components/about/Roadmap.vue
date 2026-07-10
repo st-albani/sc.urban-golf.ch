@@ -125,7 +125,7 @@ const features: Feature[] = [
   { key: 'OpenSource', icon: GlobeAltIcon, done: true, visible: true },
   { key: 'UserManagement', icon: UserIcon, done: true, visible: true },
   { key: 'CourseManagement', icon: ClipboardDocumentListIcon, done: false, visible: true },
-  { key: 'Stats', icon: ChartBarIcon, done: false, visible: true },
+  { key: 'Stats', icon: ChartBarIcon, done: true, visible: true },
   { key: 'DesignImprovements', icon: AdjustmentsHorizontalIcon, done: false, visible: true },
   { key: 'ClubManagement', icon: UsersIcon, done: false, visible: true },
   { key: 'Desktop', icon: ComputerDesktopIcon, done: false, visible: true },
