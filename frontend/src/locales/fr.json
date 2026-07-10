@@ -119,6 +119,25 @@
       }
     }
   },
+  "Auth": {
+    "Title": "Se connecter",
+    "Account": "Compte",
+    "LoggedOutHint": "Connecte-toi pour retrouver tes parties et statistiques sur tous tes appareils.",
+    "SignInCta": "Se connecter",
+    "SignOut": "Se déconnecter",
+    "EmailLead": "Nous t'envoyons un code à usage unique par e-mail — sans mot de passe.",
+    "EmailLabel": "E-mail",
+    "EmailPlaceholder": "toi{'@'}example.com",
+    "RequestCode": "Demander un code",
+    "CodeLead": "Code envoyé à {email}. Saisis-le ici.",
+    "CodeLabel": "Code à usage unique",
+    "CodePlaceholder": "123456",
+    "SignIn": "Se connecter",
+    "InvalidCode": "Code invalide ou expiré. Réessaie.",
+    "Resend": "Nouveau code",
+    "ChangeEmail": "Changer d'e-mail",
+    "SignedIn": "Connecté 🎉"
+  },
   "Share": {
     "Title": "Partager la partie",
     "EditWarning": "Toute personne disposant de ce lien peut saisir des scores.",

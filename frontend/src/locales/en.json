@@ -119,6 +119,25 @@
       }
     }
   },
+  "Auth": {
+    "Title": "Sign in",
+    "Account": "Account",
+    "LoggedOutHint": "Sign in to see your games and stats across devices.",
+    "SignInCta": "Sign in",
+    "SignOut": "Sign out",
+    "EmailLead": "We'll e-mail you a one-time code — no password needed.",
+    "EmailLabel": "E-mail",
+    "EmailPlaceholder": "you{'@'}example.com",
+    "RequestCode": "Request code",
+    "CodeLead": "Code sent to {email}. Enter it here.",
+    "CodeLabel": "One-time code",
+    "CodePlaceholder": "123456",
+    "SignIn": "Sign in",
+    "InvalidCode": "Code invalid or expired. Please try again.",
+    "Resend": "New code",
+    "ChangeEmail": "Change e-mail",
+    "SignedIn": "Signed in 🎉"
+  },
   "Share": {
     "Title": "Share game",
     "EditWarning": "Anyone with this link can enter scores.",

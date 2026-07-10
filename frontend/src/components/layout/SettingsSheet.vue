@@ -38,6 +38,25 @@
         </div>
       </section>
 
+      <section class="settings__section">
+        <h3 class="t-eyebrow">{{ $t('Auth.Account') }}</h3>
+        <div v-if="auth.isLoggedIn" class="settings__account">
+          <div class="settings__account-info">
+            <UserCircleIcon class="w-5 h-5" aria-hidden="true" />
+            <span class="settings__account-email">{{ auth.account?.email }}</span>
+          </div>
+          <AppButton variant="ghost" size="sm" pill @click="auth.logout()">
+            {{ $t('Auth.SignOut') }}
+          </AppButton>
+        </div>
+        <template v-else>
+          <p class="t-muted settings__account-hint">{{ $t('Auth.LoggedOutHint') }}</p>
+          <AppButton variant="secondary" size="md" block pill @click="openLogin">
+            {{ $t('Auth.SignInCta') }}
+          </AppButton>
+        </template>
+      </section>
+
       <footer class="settings__meta">
         <span>{{ $t('General.Version') }}</span>
         <span class="settings__version">{{ appVersion }}</span>
@@ -49,15 +68,24 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { SunIcon, MoonIcon, ComputerDesktopIcon } from '@heroicons/vue/24/outline'
+import { SunIcon, MoonIcon, ComputerDesktopIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
 import AppBottomSheet from '@/components/ui/AppBottomSheet.vue'
+import AppButton from '@/components/ui/AppButton.vue'
 import { useThemeMode } from '@/composables/useThemeMode'
+import { useAuthStore } from '@/stores/auth'
 
 defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const { isDark, set: setIsDark } = useThemeMode()
 const { locale, t } = useI18n()
+const auth = useAuthStore()
+
+// Login startet im global gemounteten AuthSheet — Settings vorher schließen.
+function openLogin() {
+  emit('update:modelValue', false)
+  auth.openLogin()
+}
 
 type ThemeValue = 'light' | 'dark' | 'system'
 
@@ -135,6 +163,38 @@ const appVersion = __APP_VERSION__
 }
 
 .settings__flag { font-size: 1.15rem; line-height: 1; }
+
+.settings__account {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.6rem 0.85rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+}
+
+.settings__account-info {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  color: var(--text-default);
+}
+
+.settings__account-email {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+  font-size: var(--text-sm);
+}
+
+.settings__account-hint {
+  font-size: var(--text-sm);
+  margin-bottom: 0.1rem;
+}
 
 .settings__meta {
   display: flex;

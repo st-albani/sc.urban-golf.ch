@@ -120,3 +120,34 @@ export async function submitFeedback(payload: FeedbackPayload): Promise<{ succes
   const { data } = await axios.post<{ success: boolean }>(API_ROUTES.FEEDBACK, payload)
   return data
 }
+
+// ---- Auth (optionale Identität via E-Mail-OTP) ----
+
+export interface Account {
+  id: string
+  email: string
+  displayName: string | null
+}
+
+export async function requestOtp(email: string): Promise<void> {
+  await axios.post(`${API_ROUTES.AUTH}/request-otp`, { email })
+}
+
+export async function verifyOtp(email: string, code: string): Promise<Account> {
+  const { data } = await axios.post<{ account: Account }>(`${API_ROUTES.AUTH}/verify-otp`, { email, code })
+  return data.account
+}
+
+export async function fetchMe(): Promise<Account | null> {
+  try {
+    const { data } = await axios.get<{ account: Account }>(`${API_ROUTES.AUTH}/me`)
+    return data.account
+  } catch {
+    // 401 (nicht eingeloggt) wird vom Interceptor still durchgereicht.
+    return null
+  }
+}
+
+export async function logout(): Promise<void> {
+  await axios.post(`${API_ROUTES.AUTH}/logout`)
+}

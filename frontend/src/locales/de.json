@@ -119,6 +119,25 @@
       }
     }
   },
+  "Auth": {
+    "Title": "Anmelden",
+    "Account": "Konto",
+    "LoggedOutHint": "Melde dich an, um deine Spiele und Statistiken geräteübergreifend zu sehen.",
+    "SignInCta": "Anmelden",
+    "SignOut": "Abmelden",
+    "EmailLead": "Wir schicken dir einen Einmalcode per E-Mail — kein Passwort nötig.",
+    "EmailLabel": "E-Mail",
+    "EmailPlaceholder": "du{'@'}example.com",
+    "RequestCode": "Code anfordern",
+    "CodeLead": "Code an {email} gesendet. Gib ihn hier ein.",
+    "CodeLabel": "Einmalcode",
+    "CodePlaceholder": "123456",
+    "SignIn": "Anmelden",
+    "InvalidCode": "Code ungültig oder abgelaufen. Bitte erneut versuchen.",
+    "Resend": "Neuen Code",
+    "ChangeEmail": "E-Mail ändern",
+    "SignedIn": "Angemeldet 🎉"
+  },
   "Share": {
     "Title": "Spiel teilen",
     "EditWarning": "Jeder mit diesem Link kann Scores eintragen.",

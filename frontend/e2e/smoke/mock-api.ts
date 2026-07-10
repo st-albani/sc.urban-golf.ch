@@ -187,5 +187,27 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ success: true }) })
   })
 
+  // ---- Auth (optionale Identität) ----
+  await page.route('**/api/auth/request-otp', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }),
+  )
+  await page.route('**/api/auth/verify-otp', (route) => {
+    const payload = JSON.parse(route.request().postData() || '{}') as { email: string; code: string }
+    if (payload.code === '123456') {
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ account: { id: 'acc-mock-1', email: payload.email, displayName: null } }),
+      })
+    }
+    return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'invalid_code' }) })
+  })
+  await page.route('**/api/auth/me', (route) =>
+    route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'unauthenticated' }) }),
+  )
+  await page.route('**/api/auth/logout', (route) =>
+    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }),
+  )
+
   return state
 }

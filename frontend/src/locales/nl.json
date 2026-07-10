@@ -119,6 +119,25 @@
       }
     }
   },
+  "Auth": {
+    "Title": "Inloggen",
+    "Account": "Account",
+    "LoggedOutHint": "Log in om je spellen en statistieken op al je apparaten te zien.",
+    "SignInCta": "Inloggen",
+    "SignOut": "Uitloggen",
+    "EmailLead": "We sturen je een eenmalige code per e-mail — geen wachtwoord nodig.",
+    "EmailLabel": "E-mail",
+    "EmailPlaceholder": "jij{'@'}example.com",
+    "RequestCode": "Code aanvragen",
+    "CodeLead": "Code verstuurd naar {email}. Voer hem hier in.",
+    "CodeLabel": "Eenmalige code",
+    "CodePlaceholder": "123456",
+    "SignIn": "Inloggen",
+    "InvalidCode": "Code ongeldig of verlopen. Probeer opnieuw.",
+    "Resend": "Nieuwe code",
+    "ChangeEmail": "E-mail wijzigen",
+    "SignedIn": "Ingelogd 🎉"
+  },
   "Share": {
     "Title": "Spel delen",
     "EditWarning": "Iedereen met deze link kan scores invoeren.",
