@@ -43,6 +43,14 @@
 
       <div class="hole-header__actions">
         <AppIconButton
+          :label="$t('Share.Title')"
+          variant="outline"
+          size="md"
+          @click="shareOpen = true"
+        >
+          <ShareIcon class="w-5 h-5" />
+        </AppIconButton>
+        <AppIconButton
           :label="$t('Games.HoleView.EditGame')"
           variant="outline"
           size="md"
@@ -186,6 +194,8 @@
         </details>
       </div>
     </AppBottomSheet>
+
+    <ShareGameSheet v-model="shareOpen" :game-id="gameId" :game-name="gameName" />
   </div>
 </template>
 
@@ -202,10 +212,11 @@ import { VALIDATION } from '@/constants'
 import AppIconButton from '@/components/ui/AppIconButton.vue'
 import AppBottomSheet from '@/components/ui/AppBottomSheet.vue'
 import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
+import ShareGameSheet from '@/components/games/ShareGameSheet.vue'
 import {
   MinusIcon, PlusIcon,
   ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon,
-  PencilSquareIcon, CheckIcon,
+  PencilSquareIcon, CheckIcon, ShareIcon,
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
@@ -221,6 +232,7 @@ const { colorMap } = usePlayerColors(players)
 const { hasScore, holeState } = useHoleCompletion(players, scores)
 
 const displayName = computed(() => shortGameName(gameName.value))
+const shareOpen = ref(false)
 
 function hasCurrentScore(playerId: string) {
   return hasScore(playerId, hole.value)
@@ -500,6 +512,13 @@ function ensureScoreFieldsExist() {
   justify-content: space-between;
   align-items: flex-start;
   gap: 1rem;
+}
+
+.hole-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
 }
 
 .hole-header__title {
