@@ -183,12 +183,21 @@
       "KeypadShowAll": "Tout afficher",
       "KeypadShortcutHint": "Astuce : 1–7 au clavier",
       "StepperBack": "Trou précédent ({n})",
-      "StepperForward": "Trou suivant ({n})"
+      "StepperForward": "Trou suivant ({n})",
+      "Completion": "{done}/{total} saisis",
+      "MissingScore": "manquant",
+      "PillComplete": "Trou {n}, saisi pour tous",
+      "PillPartial": "Trou {n}, partiellement saisi"
     }
   },
   "Network": {
     "Offline": "Tu es hors ligne. Les scores seront sauvegardés localement.",
     "BackOnline": "De retour en ligne. Synchronisation des scores..."
+  },
+  "Sync": {
+    "Offline": "Hors ligne",
+    "OfflinePending": "Hors ligne · {n} en attente",
+    "Syncing": "Synchronisation de {n} …"
   },
   "Errors": {
     "RequestFailed": "Requête échouée",

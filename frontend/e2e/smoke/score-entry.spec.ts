@@ -53,7 +53,8 @@ test.describe('Score-Entry Hole-View (Smoke)', () => {
   test('Hole-Pill Navigation wechselt das Loch', async ({ page, mockApi }) => {
     void mockApi
     await page.goto(`/games/${gameId}/1`)
-    await page.locator('.hole-progress__chip', { hasText: /^2$/ }).click()
+    // Pill per href ansteuern — robust gegenüber Icon/Textinhalt der Pill.
+    await page.locator(`a.hole-progress__chip[href$="/${gameId}/2"]`).click()
     await expect(page).toHaveURL(new RegExp(`/games/${gameId}/2$`))
     await expect(page.locator('.hole-header__number')).toHaveText('2')
   })

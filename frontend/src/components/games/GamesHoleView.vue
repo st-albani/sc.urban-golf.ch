@@ -53,6 +53,19 @@
       </div>
     </header>
 
+    <!-- Vollständigkeit des aktuellen Lochs: "X/Y erfasst". aria-live kündigt
+         Änderungen für Screenreader an, ohne den Fokus zu verschieben. -->
+    <p
+      v-if="players.length"
+      class="hole-completion"
+      :class="{ 'is-complete': currentComplete }"
+      role="status"
+      aria-live="polite"
+    >
+      <CheckCircleIcon v-if="currentComplete" class="hole-completion__icon" aria-hidden="true" />
+      <span>{{ $t('Games.HoleView.Completion', { done: currentCompletion.done, total: currentCompletion.total }) }}</span>
+    </p>
+
     <!-- Fortschritt: Loch-Pills — aktives Loch wird automatisch zentriert -->
     <div ref="pillsRef" class="hole-progress scroll-hide" role="list">
       <router-link
@@ -62,11 +75,14 @@
         :to="`/games/${gameId}/${n}`"
         :class="['hole-progress__chip', {
           'is-current': n === hole,
-          'is-filled': isFilled(n),
+          'is-partial': holeStateFor(n) === 'partial',
+          'is-complete': holeStateFor(n) === 'complete',
         }]"
+        :aria-label="pillAriaLabel(n)"
         role="listitem"
       >
         {{ n }}
+        <CheckIcon v-if="holeStateFor(n) === 'complete'" class="hole-progress__check" aria-hidden="true" />
       </router-link>
       <router-link
         :to="`/games/${gameId}/${nextNewHole}`"
@@ -87,6 +103,7 @@
         v-for="player in players"
         :key="player.id"
         class="player-tile"
+        :class="{ 'player-tile--missing': !hasCurrentScore(player.id) }"
         :style="{ '--player-accent': colorMap[player.id]?.color }"
       >
         <div class="player-tile__identity">
@@ -96,6 +113,9 @@
             size="md"
           />
           <h2 class="player-tile__name" :title="player.name">{{ player.name }}</h2>
+          <span v-if="!hasCurrentScore(player.id)" class="player-tile__missing-badge">
+            {{ $t('Games.HoleView.MissingScore') }}
+          </span>
         </div>
 
         <div class="player-tile__controls">
@@ -115,7 +135,7 @@
             class="stroke-value"
             :class="{ 'is-saving': savingMap[player.id] }"
             @click="openKeypad(player.id)"
-            :aria-label="$t('Games.HoleView.ScoreFor', { player: player.name }) + ': ' + (scores[player.id]?.[hole] ?? '–')"
+            :aria-label="$t('Games.HoleView.ScoreFor', { player: player.name }) + ': ' + (hasCurrentScore(player.id) ? scores[player.id]?.[hole] : $t('Games.HoleView.MissingScore'))"
             :aria-busy="savingMap[player.id] || undefined"
           >
             {{ scores[player.id]?.[hole] ?? '–' }}
@@ -182,9 +202,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, inject } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useScoreSyncStore } from '@/stores/scoreSync'
 import { usePlayerColors } from '@/composables/usePlayerColors'
+import { useHoleCompletion } from '@/composables/useHoleCompletion'
 import { gamesDetailKey } from '@/types'
 import { shortGameName } from '@/utils/format'
 import { VALIDATION } from '@/constants'
@@ -194,11 +216,12 @@ import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
 import {
   MinusIcon, PlusIcon,
   ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon,
-  PencilSquareIcon,
+  PencilSquareIcon, CheckCircleIcon, CheckIcon,
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const gameId = computed(() => route.params.gameId as string)
 const hole = computed(() => parseInt(route.params.holeId as string))
 
@@ -206,8 +229,29 @@ const context = inject(gamesDetailKey)!
 const { players, scores, holes, gameName } = context
 const { saveScore: saveScoreOffline } = useScoreSyncStore()
 const { colorMap } = usePlayerColors(players)
+const { hasScore, completion, isComplete, holeState } = useHoleCompletion(players, scores)
 
 const displayName = computed(() => shortGameName(gameName.value))
+
+// Vollständigkeit des aktuell geöffneten Lochs
+const currentCompletion = computed(() => completion(hole.value))
+const currentComplete = computed(() => isComplete(hole.value))
+function hasCurrentScore(playerId: string) {
+  return hasScore(playerId, hole.value)
+}
+
+/** Pill-Zustand eines Lochs für die Fortschrittsleiste. */
+function holeStateFor(holeNum: number) {
+  return holeState(holeNum)
+}
+
+/** Beschreibt den Pill-Zustand für Screenreader (nicht nur farblich). */
+function pillAriaLabel(holeNum: number) {
+  const state = holeState(holeNum)
+  if (state === 'complete') return t('Games.HoleView.PillComplete', { n: holeNum })
+  if (state === 'partial') return t('Games.HoleView.PillPartial', { n: holeNum })
+  return `${t('General.Hole')} ${holeNum}`
+}
 
 const strokeRange = computed(() => {
   const { STROKES_MIN: min, STROKES_MAX: max } = VALIDATION
@@ -223,13 +267,6 @@ const nextNewHole = computed(() => {
   const max = holes.value.length ? Math.max(...holes.value) : 0
   return Math.min(VALIDATION.HOLE_MAX, max + 1)
 })
-
-function isFilled(holeNum: number) {
-  return players.value.some(p => {
-    const v = scores.value[p.id]?.[holeNum]
-    return v !== undefined && v !== '' && v !== null
-  })
-}
 
 // Score element refs for pulse animation
 const scoreRefs: Record<string, HTMLElement | null> = {}
@@ -506,6 +543,37 @@ function ensureScoreFieldsExist() {
   font-variant-numeric: tabular-nums;
 }
 
+/* Vollständigkeits-Zähler des aktuellen Lochs */
+.hole-completion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  align-self: flex-start;
+  padding: 0.25rem 0.7rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--text-default) 7%, transparent);
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-top: -0.15rem;
+}
+
+.hole-completion.is-complete {
+  background: color-mix(in oklab, var(--color-success-500) 16%, transparent);
+  color: color-mix(in oklab, var(--color-success-600) 80%, var(--text-strong));
+}
+
+:root.dark .hole-completion.is-complete {
+  color: var(--color-success-400);
+}
+
+.hole-completion__icon {
+  width: 1rem;
+  height: 1rem;
+  flex-shrink: 0;
+}
+
 /* Progress pills */
 .hole-progress {
   display: flex;
@@ -536,10 +604,31 @@ function ensureScoreFieldsExist() {
 
 .hole-progress__chip:active { transform: scale(0.94); }
 
-.hole-progress__chip.is-filled {
+/* Teilweise erfasst: mindestens ein, aber nicht alle Spieler. */
+.hole-progress__chip.is-partial {
   color: var(--primary);
-  background: color-mix(in oklab, var(--primary) 14%, var(--card-bg));
-  border-color: color-mix(in oklab, var(--primary) 25%, var(--card-border));
+  background: color-mix(in oklab, var(--primary) 12%, var(--card-bg));
+  border-color: color-mix(in oklab, var(--primary) 22%, var(--card-border));
+}
+
+/* Vollständig für alle Spieler: Success-Tint + Häkchen (nicht nur farblich). */
+.hole-progress__chip.is-complete {
+  color: color-mix(in oklab, var(--color-success-600) 85%, var(--text-strong));
+  background: color-mix(in oklab, var(--color-success-500) 16%, var(--card-bg));
+  border-color: color-mix(in oklab, var(--color-success-500) 32%, var(--card-border));
+  padding-inline: 0.55rem 0.5rem;
+}
+
+:root.dark .hole-progress__chip.is-complete {
+  color: var(--color-success-400);
+}
+
+.hole-progress__check {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-left: 0.15rem;
+  flex-shrink: 0;
+  stroke-width: 2.5;
 }
 
 .hole-progress__chip.is-current {
@@ -597,6 +686,13 @@ function ensureScoreFieldsExist() {
   box-shadow: 3px 0 8px -5px color-mix(in oklab, var(--player-accent) 20%, transparent);
 }
 
+/* Loch noch nicht für diesen Spieler erfasst: dezente Hervorhebung, damit
+   die Lücke ins Auge springt, ohne die Farbakzente zu dominieren. */
+.player-tile--missing {
+  border-color: color-mix(in oklab, var(--color-warning-500) 45%, var(--card-border));
+  background: color-mix(in oklab, var(--color-warning-500) 6%, var(--card-bg));
+}
+
 .player-tile__identity {
   grid-area: identity;
   display: flex;
@@ -604,6 +700,22 @@ function ensureScoreFieldsExist() {
   gap: 0.6rem;
   min-width: 0;
   padding-left: 0.3rem;
+}
+
+.player-tile__missing-badge {
+  flex-shrink: 0;
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+  background: color-mix(in oklab, var(--color-warning-500) 20%, transparent);
+  color: color-mix(in oklab, var(--color-warning-600) 85%, var(--text-strong));
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+:root.dark .player-tile__missing-badge {
+  color: var(--color-warning-400);
 }
 
 .player-tile__name {

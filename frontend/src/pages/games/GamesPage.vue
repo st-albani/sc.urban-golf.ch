@@ -31,10 +31,15 @@
                 v-for="n in holes"
                 :key="n"
                 :to="`/games/${gameId}/${n}`"
-                class="games-detail__hole-chip"
+                :class="['games-detail__hole-chip', {
+                  'is-partial': holeState(n) === 'partial',
+                  'is-complete': holeState(n) === 'complete',
+                }]"
+                :aria-label="pillAriaLabel(n)"
                 role="listitem"
               >
                 {{ n }}
+                <CheckIcon v-if="holeState(n) === 'complete'" class="games-detail__hole-check" aria-hidden="true" />
               </router-link>
               <router-link
                 :to="`/games/${gameId}/${nextNewHole}`"
@@ -61,16 +66,19 @@ import GamesHoleView from '@/components/games/GamesHoleView.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import AppIconButton from '@/components/ui/AppIconButton.vue'
 
-import { PencilSquareIcon, PlusIcon } from '@heroicons/vue/24/outline'
+import { PencilSquareIcon, PlusIcon, CheckIcon } from '@heroicons/vue/24/outline'
 import { computed, provide, watchEffect } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import { useGamesDetailData } from '@/composables/useGamesDetailData'
+import { useHoleCompletion } from '@/composables/useHoleCompletion'
 import { gamesDetailKey } from '@/types'
 import { shortGameName } from '@/utils/format'
 import { VALIDATION } from '@/constants'
 
 const route = useRoute()
+const { t } = useI18n()
 const gameId = computed(() => route.params.gameId as string)
 const hasValidGameId = computed(() =>
   typeof gameId.value === 'string' && /^[a-zA-Z0-9_-]{10,30}$/.test(gameId.value)
@@ -80,6 +88,16 @@ const isHoleView = computed(() => 'holeId' in route.params)
 const { players, scores, holes, gameName, error, load: loadGamesDetailData } = useGamesDetailData(gameId)
 
 provide(gamesDetailKey, { players, scores, holes, gameName, error, load: loadGamesDetailData })
+
+const { holeState } = useHoleCompletion(players, scores)
+
+/** Beschreibt den Chip-Zustand für Screenreader (nicht nur farblich). */
+function pillAriaLabel(holeNum: number) {
+  const state = holeState(holeNum)
+  if (state === 'complete') return t('Games.HoleView.PillComplete', { n: holeNum })
+  if (state === 'partial') return t('Games.HoleView.PillPartial', { n: holeNum })
+  return `${t('General.Hole')} ${holeNum}`
+}
 
 async function reload() { await loadGamesDetailData() }
 
@@ -158,6 +176,33 @@ watchEffect(async () => {
 }
 
 .games-detail__hole-chip:active { transform: scale(0.94); }
+
+/* Teilweise erfasst: mindestens ein, aber nicht alle Spieler. */
+.games-detail__hole-chip.is-partial {
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 12%, var(--card-bg));
+  border-color: color-mix(in oklab, var(--primary) 22%, var(--card-border));
+}
+
+/* Vollständig für alle Spieler: Success-Tint + Häkchen (nicht nur farblich). */
+.games-detail__hole-chip.is-complete {
+  color: color-mix(in oklab, var(--color-success-600) 85%, var(--text-strong));
+  background: color-mix(in oklab, var(--color-success-500) 16%, var(--card-bg));
+  border-color: color-mix(in oklab, var(--color-success-500) 32%, var(--card-border));
+  padding-inline: 0.55rem 0.5rem;
+}
+
+:root.dark .games-detail__hole-chip.is-complete {
+  color: var(--color-success-400);
+}
+
+.games-detail__hole-check {
+  width: 0.95rem;
+  height: 0.95rem;
+  margin-left: 0.15rem;
+  flex-shrink: 0;
+  stroke-width: 2.5;
+}
 
 .games-detail__hole-chip--add {
   color: var(--text-muted);

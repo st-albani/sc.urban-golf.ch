@@ -184,12 +184,21 @@
       "KeypadShowAll": "Show all",
       "KeypadShortcutHint": "Tip: press 1–7 on your keyboard",
       "StepperBack": "Previous hole ({n})",
-      "StepperForward": "Next hole ({n})"
+      "StepperForward": "Next hole ({n})",
+      "Completion": "{done}/{total} recorded",
+      "MissingScore": "missing",
+      "PillComplete": "Hole {n}, recorded for everyone",
+      "PillPartial": "Hole {n}, partially recorded"
     }
   },
   "Network": {
     "Offline": "You're offline. Scores will be saved locally.",
     "BackOnline": "Back online. Syncing scores..."
+  },
+  "Sync": {
+    "Offline": "Offline",
+    "OfflinePending": "Offline · {n} pending",
+    "Syncing": "Syncing {n} …"
   },
   "Errors": {
     "RequestFailed": "Request failed",
