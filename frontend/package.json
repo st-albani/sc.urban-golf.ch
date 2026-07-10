@@ -34,7 +34,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",
-    "@playwright/test": "^1.49.0",
+    "@playwright/test": "^1.61.1",
     "@tailwindcss/typography": "^0.5.16",
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-vue": "^6.0.0",
