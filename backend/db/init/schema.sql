@@ -282,5 +282,24 @@ ALTER TABLE ONLY public.sessions
     ADD CONSTRAINT fk_sessions_account FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
 
 --
+-- Verknüpfung Account ↔ Spieler-Einträge
+--
+
+CREATE TABLE public.account_players (
+    account_id uuid NOT NULL,
+    player_id text NOT NULL,
+    created_at timestamptz DEFAULT now(),
+    CONSTRAINT account_players_pkey PRIMARY KEY (account_id, player_id)
+);
+
+CREATE INDEX idx_account_players_player ON public.account_players USING btree (player_id);
+
+ALTER TABLE ONLY public.account_players
+    ADD CONSTRAINT fk_account_players_account FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.account_players
+    ADD CONSTRAINT fk_account_players_player FOREIGN KEY (player_id) REFERENCES public.players(id) ON DELETE CASCADE;
+
+--
 -- PostgreSQL database dump complete
 --

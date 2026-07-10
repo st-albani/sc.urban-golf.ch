@@ -40,14 +40,38 @@
 
       <section class="settings__section">
         <h3 class="t-eyebrow">{{ $t('Auth.Account') }}</h3>
-        <div v-if="auth.isLoggedIn" class="settings__account">
-          <div class="settings__account-info">
-            <UserCircleIcon class="w-5 h-5" aria-hidden="true" />
-            <span class="settings__account-email">{{ auth.account?.email }}</span>
+        <div v-if="auth.isLoggedIn" class="settings__account-block">
+          <div class="settings__account">
+            <div class="settings__account-info">
+              <UserCircleIcon class="w-5 h-5" aria-hidden="true" />
+              <span class="settings__account-email">{{ auth.account?.email }}</span>
+            </div>
+            <AppButton variant="ghost" size="sm" pill @click="auth.logout()">
+              {{ $t('Auth.SignOut') }}
+            </AppButton>
           </div>
-          <AppButton variant="ghost" size="sm" pill @click="auth.logout()">
-            {{ $t('Auth.SignOut') }}
-          </AppButton>
+          <label class="t-eyebrow settings__name-label" for="settings-name">{{ $t('Auth.DisplayNameLabel') }}</label>
+          <div class="settings__name-row">
+            <input
+              id="settings-name"
+              v-model="nameInput"
+              class="field settings__name-input"
+              type="text"
+              maxlength="30"
+              :placeholder="$t('Auth.DisplayNamePlaceholder')"
+              @keydown.enter="saveName"
+            />
+            <AppButton
+              variant="secondary"
+              size="md"
+              pill
+              :loading="savingName"
+              :disabled="!nameInput.trim()"
+              @click="saveName"
+            >
+              {{ $t('General.Send') }}
+            </AppButton>
+          </div>
         </div>
         <template v-else>
           <p class="t-muted settings__account-hint">{{ $t('Auth.LoggedOutHint') }}</p>
@@ -69,22 +93,49 @@
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { SunIcon, MoonIcon, ComputerDesktopIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
+import { watch } from 'vue'
 import AppBottomSheet from '@/components/ui/AppBottomSheet.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { useThemeMode } from '@/composables/useThemeMode'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 
-defineProps<{ modelValue: boolean }>()
+const props = defineProps<{ modelValue: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const { isDark, set: setIsDark } = useThemeMode()
 const { locale, t } = useI18n()
 const auth = useAuthStore()
+const { success } = useToast()
 
 // Login startet im global gemounteten AuthSheet — Settings vorher schließen.
 function openLogin() {
   emit('update:modelValue', false)
   auth.openLogin()
+}
+
+const nameInput = ref('')
+const savingName = ref(false)
+
+// Anzeigename ins Feld übernehmen, wenn das Sheet öffnet / Account lädt.
+watch(
+  () => [props.modelValue, auth.account?.displayName] as const,
+  ([open]) => {
+    if (open) nameInput.value = auth.account?.displayName || ''
+  },
+  { immediate: true },
+)
+
+async function saveName() {
+  const name = nameInput.value.trim()
+  if (!name || savingName.value) return
+  savingName.value = true
+  try {
+    const count = await auth.setDisplayName(name)
+    success(count > 0 ? t('Auth.NameClaimed', { count }) : t('Auth.NameSaved'))
+  } finally {
+    savingName.value = false
+  }
 }
 
 type ThemeValue = 'light' | 'dark' | 'system'
@@ -194,6 +245,27 @@ const appVersion = __APP_VERSION__
 .settings__account-hint {
   font-size: var(--text-sm);
   margin-bottom: 0.1rem;
+}
+
+.settings__account-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.settings__name-label {
+  margin: 0.1rem 0 -0.25rem;
+}
+
+.settings__name-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.settings__name-input {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .settings__meta {

@@ -136,7 +136,11 @@
     "InvalidCode": "Code ongeldig of verlopen. Probeer opnieuw.",
     "Resend": "Nieuwe code",
     "ChangeEmail": "E-mail wijzigen",
-    "SignedIn": "Ingelogd 🎉"
+    "SignedIn": "Ingelogd 🎉",
+    "DisplayNameLabel": "Weergavenaam",
+    "DisplayNamePlaceholder": "Je naam",
+    "NameSaved": "Naam opgeslagen.",
+    "NameClaimed": "Naam opgeslagen · {count} rondes gekoppeld."
   },
   "Share": {
     "Title": "Spel delen",
@@ -198,6 +202,9 @@
       "SearchText": "Spel- of spelersnaam",
       "SearchAria": "Spellen zoeken",
       "ClearSearch": "Zoekopdracht wissen",
+      "FilterAll": "Alle",
+      "FilterMine": "Mijn",
+      "NoMyGames": "Nog geen eigen spellen. Stel je weergavenaam in bij instellingen om eerdere rondes te koppelen.",
       "LoadMore": "Meer spellen laden",
       "Loading": "Spellen worden geladen…"
     },

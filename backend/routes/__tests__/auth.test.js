@@ -140,6 +140,57 @@ describe('Auth routes', () => {
     })
   })
 
+  describe('POST /profile', () => {
+    it('requires a session', async () => {
+      createMockClient()
+      const res = await app.inject({ method: 'POST', url: '/profile', payload: { displayName: 'Anna' } })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('sets the display name and claims players with that name', async () => {
+      const client = createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: null }] }],
+        ['UPDATE accounts SET display_name', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
+        ['INSERT INTO account_players', { rows: [{ player_id: 'p1' }, { player_id: 'p2' }] }],
+      ])
+      const res = await app.inject({
+        method: 'POST',
+        url: '/profile',
+        payload: { displayName: 'Anna' },
+        cookies: { [SESSION_COOKIE]: 'tok' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({
+        account: { id: 'acc1', email: 'a@b.com', displayName: 'Anna' },
+        claimedCount: 2,
+      })
+      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO account_players'), ['acc1', 'Anna'])
+    })
+  })
+
+  describe('GET /my-games', () => {
+    it('requires a session', async () => {
+      createMockClient()
+      const res = await app.inject({ method: 'GET', url: '/my-games' })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('returns the games of claimed players', async () => {
+      createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
+        ['WITH my_games AS', { rows: [{ id: 'g1', name: 'Stadtpark', players: [], holes: [1, 2] }] }],
+      ])
+      const res = await app.inject({
+        method: 'GET',
+        url: '/my-games',
+        cookies: { [SESSION_COOKIE]: 'tok' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().games).toHaveLength(1)
+      expect(res.json().games[0].name).toBe('Stadtpark')
+    })
+  })
+
   describe('POST /logout', () => {
     it('deletes the session and clears the cookie', async () => {
       const client = createMockClient()

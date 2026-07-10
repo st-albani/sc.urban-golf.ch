@@ -151,3 +151,16 @@ export async function fetchMe(): Promise<Account | null> {
 export async function logout(): Promise<void> {
   await axios.post(`${API_ROUTES.AUTH}/logout`)
 }
+
+export async function setProfile(displayName: string): Promise<{ account: Account; claimedCount: number }> {
+  const { data } = await axios.post<{ account: Account; claimedCount: number }>(
+    `${API_ROUTES.AUTH}/profile`,
+    { displayName },
+  )
+  return data
+}
+
+export async function fetchMyGames(): Promise<GameSummary[]> {
+  const { data } = await axios.get<GamesSummaryResponse>(`${API_ROUTES.AUTH}/my-games`)
+  return data.games
+}

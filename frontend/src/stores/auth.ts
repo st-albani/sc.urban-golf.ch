@@ -5,6 +5,7 @@ import {
   verifyOtp as apiVerifyOtp,
   fetchMe,
   logout as apiLogout,
+  setProfile as apiSetProfile,
   type Account,
 } from '@/services/api'
 
@@ -53,8 +54,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /** Anzeigename setzen und eigene Spieler-Einträge beanspruchen. */
+  async function setDisplayName(name: string): Promise<number> {
+    const { account: updated, claimedCount } = await apiSetProfile(name)
+    account.value = updated
+    return claimedCount
+  }
+
   return {
     account, loaded, loginOpen, isLoggedIn, displayName,
-    openLogin, closeLogin, loadMe, requestOtp, verifyOtp, logout,
+    openLogin, closeLogin, loadMe, requestOtp, verifyOtp, logout, setDisplayName,
   }
 })

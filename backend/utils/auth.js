@@ -57,3 +57,16 @@ export async function getAccountFromRequest(request) {
   );
   return row ? { id: row.id, email: row.email, displayName: row.display_name } : null;
 }
+
+/**
+ * Fastify-preHandler: erzwingt eine gültige Session. Setzt request.account
+ * oder antwortet mit 401. Für geschützte (account-scoped) Endpunkte.
+ */
+export async function requireAuth(request, reply) {
+  const account = await getAccountFromRequest(request);
+  if (!account) {
+    reply.code(401).send({ error: 'unauthenticated' });
+    return reply;
+  }
+  request.account = account;
+}

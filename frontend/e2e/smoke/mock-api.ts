@@ -188,25 +188,58 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
   })
 
   // ---- Auth (optionale Identität) ----
+  // Zustandsbehaftet, damit die "Session" auch einen Reload (page.goto) überlebt
+  // — wie ein echtes Cookie.
+  const authState: { account: { id: string; email: string; displayName: string | null } | null } = { account: null }
+
   await page.route('**/api/auth/request-otp', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }),
   )
   await page.route('**/api/auth/verify-otp', (route) => {
     const payload = JSON.parse(route.request().postData() || '{}') as { email: string; code: string }
     if (payload.code === '123456') {
+      authState.account = { id: 'acc-mock-1', email: payload.email, displayName: null }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ account: { id: 'acc-mock-1', email: payload.email, displayName: null } }),
+        body: JSON.stringify({ account: authState.account }),
       })
     }
     return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'invalid_code' }) })
   })
-  await page.route('**/api/auth/me', (route) =>
-    route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'unauthenticated' }) }),
-  )
-  await page.route('**/api/auth/logout', (route) =>
-    route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }),
+  await page.route('**/api/auth/me', (route) => {
+    if (authState.account) {
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ account: authState.account }) })
+    }
+    return route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'unauthenticated' }) })
+  })
+  await page.route('**/api/auth/logout', (route) => {
+    authState.account = null
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+  })
+  await page.route('**/api/auth/profile', (route) => {
+    const p = JSON.parse(route.request().postData() || '{}') as { displayName: string }
+    if (authState.account) authState.account.displayName = p.displayName
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: p.displayName }, claimedCount: 2 }),
+    })
+  })
+  await page.route('**/api/auth/my-games', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        games: [{
+          id: 'mock-game-alpha-2026',
+          name: 'Stadtpark-Runde',
+          created_at: '2026-04-12T18:30:00Z',
+          players: [{ id: 'pl-anna-meier-001', name: 'Anna Meier', avg: 3.67, total: 11 }],
+          holes: [1, 2, 3],
+        }],
+      }),
+    }),
   )
 
   return state

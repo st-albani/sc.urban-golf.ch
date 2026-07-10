@@ -136,7 +136,11 @@
     "InvalidCode": "Code invalid or expired. Please try again.",
     "Resend": "New code",
     "ChangeEmail": "Change e-mail",
-    "SignedIn": "Signed in 🎉"
+    "SignedIn": "Signed in 🎉",
+    "DisplayNameLabel": "Display name",
+    "DisplayNamePlaceholder": "Your name",
+    "NameSaved": "Name saved.",
+    "NameClaimed": "Name saved · {count} rounds linked."
   },
   "Share": {
     "Title": "Share game",
@@ -198,6 +202,9 @@
       "SearchText": "Game- or Playername",
       "SearchAria": "Search games",
       "ClearSearch": "Clear search",
+      "FilterAll": "All",
+      "FilterMine": "Mine",
+      "NoMyGames": "No games of your own yet. Set your display name in settings to link past rounds.",
       "LoadMore": "Load more games",
       "Loading": "Loading games…"
     },

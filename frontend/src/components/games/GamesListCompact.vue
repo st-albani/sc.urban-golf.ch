@@ -13,7 +13,15 @@
         </AppIconButton>
       </div>
 
-      <div class="games-list-page__search">
+      <SegmentedControl
+        v-if="auth.isLoggedIn"
+        v-model="mode"
+        :options="modeOptions"
+        :label="$t('Games.ListGames.AllGames')"
+        block
+      />
+
+      <div v-if="mode === 'all'" class="games-list-page__search">
         <span class="games-list-page__search-icon" aria-hidden="true">
           <MagnifyingGlassIcon class="w-5 h-5" />
         </span>
@@ -38,7 +46,8 @@
       </div>
     </header>
 
-    <Suspense>
+    <GamesListMine v-if="mode === 'mine'" />
+    <Suspense v-else>
       <template #default>
         <GamesListCompactContent :search-term="searchTerm" :per-page="perPage" />
       </template>
@@ -54,11 +63,18 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import GamesListCompactContent from '@/components/games/GamesListCompactContent.vue'
+import GamesListMine from '@/components/games/GamesListMine.vue'
 import JoinGameSheet from '@/components/games/JoinGameSheet.vue'
 import AppIconButton from '@/components/ui/AppIconButton.vue'
+import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import { MagnifyingGlassIcon, XMarkIcon, QrCodeIcon } from '@heroicons/vue/24/outline'
+import { useAuthStore } from '@/stores/auth'
+
+const { t } = useI18n()
+const auth = useAuthStore()
 
 function calculatePerPage(): number {
   const available = typeof window !== 'undefined' ? window.innerHeight - 320 : 600
@@ -68,6 +84,11 @@ function calculatePerPage(): number {
 const searchTerm = ref('')
 const perPage = ref(calculatePerPage())
 const joinOpen = ref(false)
+const mode = ref<'all' | 'mine'>('all')
+const modeOptions = computed(() => [
+  { value: 'all' as const, label: t('Games.ListGames.FilterAll') },
+  { value: 'mine' as const, label: t('Games.ListGames.FilterMine') },
+])
 
 function handleResize() { perPage.value = calculatePerPage() }
 

@@ -136,7 +136,11 @@
     "InvalidCode": "Code ungültig oder abgelaufen. Bitte erneut versuchen.",
     "Resend": "Neuen Code",
     "ChangeEmail": "E-Mail ändern",
-    "SignedIn": "Angemeldet 🎉"
+    "SignedIn": "Angemeldet 🎉",
+    "DisplayNameLabel": "Anzeigename",
+    "DisplayNamePlaceholder": "Dein Name",
+    "NameSaved": "Name gespeichert.",
+    "NameClaimed": "Name gespeichert · {count} Runden zugeordnet."
   },
   "Share": {
     "Title": "Spiel teilen",
@@ -198,6 +202,9 @@
       "SearchText": "Spiel- oder Spielername",
       "SearchAria": "Spiele durchsuchen",
       "ClearSearch": "Suche zurücksetzen",
+      "FilterAll": "Alle",
+      "FilterMine": "Meine",
+      "NoMyGames": "Noch keine eigenen Spiele. Setze in den Einstellungen deinen Anzeigenamen, um vergangene Runden zuzuordnen.",
       "LoadMore": "Weitere Spiele laden",
       "Loading": "Spiele werden geladen…"
     },

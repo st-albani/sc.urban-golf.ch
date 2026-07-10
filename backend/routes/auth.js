@@ -12,6 +12,7 @@ import {
   normalizeEmail,
   sessionCookieOptions,
   getAccountFromRequest,
+  requireAuth,
 } from '../utils/auth.js';
 
 export default async function (fastify, _opts) {
@@ -116,6 +117,77 @@ export default async function (fastify, _opts) {
       const account = await getAccountFromRequest(request);
       if (!account) return reply.code(401).send({ error: 'unauthenticated' });
       return reply.send({ account });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Anzeigename setzen + eigene Spieler-Einträge (per Name) beanspruchen.
+  fastify.post('/profile', {
+    schema: schemas.postAuthProfile,
+    preHandler: requireAuth,
+    config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const displayName = request.body.displayName.trim();
+    try {
+      const account = await queryOne(
+        `UPDATE accounts SET display_name = $2 WHERE id = $1
+         RETURNING id, email, display_name`,
+        [request.account.id, displayName],
+      );
+      // Anonyme Spieler-Einträge mit exakt diesem Namen dem Account zuordnen.
+      const claimed = await query(
+        `INSERT INTO account_players (account_id, player_id)
+         SELECT $1, p.id FROM players p WHERE p.name = $2
+         ON CONFLICT DO NOTHING
+         RETURNING player_id`,
+        [request.account.id, displayName],
+      );
+      return reply.send({
+        account: { id: account.id, email: account.email, displayName: account.display_name },
+        claimedCount: claimed.length,
+      });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Spiele, an denen ein dem Account zugeordneter Spieler beteiligt ist.
+  fastify.get('/my-games', { preHandler: requireAuth }, async (request, reply) => {
+    try {
+      const games = await query(
+        `WITH my_games AS (
+           SELECT DISTINCT g.id, g.name, g.created_at
+           FROM games g
+           JOIN game_players gp ON gp.game_id = g.id
+           JOIN account_players ap ON ap.player_id = gp.player_id
+           WHERE ap.account_id = $1
+           ORDER BY g.created_at DESC
+           LIMIT 100
+         ),
+         player_stats AS (
+           SELECT g.id AS game_id, p.id AS player_id, p.name,
+                  ROUND(AVG(s.strokes)::numeric, 2) AS avg,
+                  SUM(s.strokes) AS total
+           FROM my_games g
+           JOIN game_players gp ON gp.game_id = g.id
+           JOIN players p ON p.id = gp.player_id
+           LEFT JOIN scores s ON s.game_id = g.id AND s.player_id = p.id
+           GROUP BY g.id, p.id, p.name
+         )
+         SELECT g.*,
+           (SELECT json_agg(jsonb_build_object(
+                'id', ps.player_id, 'name', ps.name, 'avg', ps.avg, 'total', ps.total))
+            FROM player_stats ps WHERE ps.game_id = g.id) AS players,
+           (SELECT ARRAY_AGG(DISTINCT s.hole ORDER BY s.hole)
+            FROM scores s WHERE s.game_id = g.id) AS holes
+         FROM my_games g
+         ORDER BY g.created_at DESC`,
+        [request.account.id],
+      );
+      return reply.send({ games });
     } catch (err) {
       request.log.error(err);
       return reply.code(500).send({ error: 'Database error' });

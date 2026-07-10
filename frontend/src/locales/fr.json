@@ -136,7 +136,11 @@
     "InvalidCode": "Code invalide ou expiré. Réessaie.",
     "Resend": "Nouveau code",
     "ChangeEmail": "Changer d'e-mail",
-    "SignedIn": "Connecté 🎉"
+    "SignedIn": "Connecté 🎉",
+    "DisplayNameLabel": "Nom affiché",
+    "DisplayNamePlaceholder": "Ton nom",
+    "NameSaved": "Nom enregistré.",
+    "NameClaimed": "Nom enregistré · {count} parties associées."
   },
   "Share": {
     "Title": "Partager la partie",
@@ -198,6 +202,9 @@
       "SearchText": "Nom du jeu ou du joueur",
       "SearchAria": "Rechercher des parties",
       "ClearSearch": "Effacer la recherche",
+      "FilterAll": "Toutes",
+      "FilterMine": "À moi",
+      "NoMyGames": "Pas encore de parties à toi. Définis ton nom affiché dans les paramètres pour associer tes parties passées.",
       "LoadMore": "Charger d'autres jeux",
       "Loading": "Chargement des parties…"
     },

@@ -201,6 +201,21 @@ export const schemas = Object.freeze({
       additionalProperties: false,
     },
   },
+
+  postAuthProfile: {
+    body: {
+      type: 'object',
+      required: ['displayName'],
+      properties: {
+        displayName: {
+          type: 'string',
+          minLength: 1,
+          maxLength: VALIDATION.NAME_MAX_LENGTH,
+        },
+      },
+      additionalProperties: false,
+    },
+  },
 });
 
 export { playerSchema, gameRowSchema, scoreRowSchema };
