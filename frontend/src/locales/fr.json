@@ -151,6 +151,7 @@
     "SignedIn": "Connecté 🎉",
     "DisplayNameLabel": "Nom affiché",
     "DisplayNamePlaceholder": "Ton nom",
+    "NameHint": "Choisis ton nom d'affichage — les parties correspondantes te sont attribuées automatiquement.",
     "NameSaved": "Nom enregistré.",
     "NameClaimed": "Nom enregistré · {count} parties associées.",
     "MyStats": "Mes statistiques"

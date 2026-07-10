@@ -151,6 +151,7 @@
     "SignedIn": "Signed in 🎉",
     "DisplayNameLabel": "Display name",
     "DisplayNamePlaceholder": "Your name",
+    "NameHint": "Pick your display name — matching rounds are linked to you automatically.",
     "NameSaved": "Name saved.",
     "NameClaimed": "Name saved · {count} rounds linked.",
     "MyStats": "My stats"

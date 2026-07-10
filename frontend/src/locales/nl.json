@@ -151,6 +151,7 @@
     "SignedIn": "Ingelogd 🎉",
     "DisplayNameLabel": "Weergavenaam",
     "DisplayNamePlaceholder": "Je naam",
+    "NameHint": "Kies je weergavenaam — bijbehorende rondes worden automatisch aan jou gekoppeld.",
     "NameSaved": "Naam opgeslagen.",
     "NameClaimed": "Naam opgeslagen · {count} rondes gekoppeld.",
     "MyStats": "Mijn statistieken"

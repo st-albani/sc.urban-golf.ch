@@ -17,10 +17,11 @@ test.describe('Identität ↔ Spieler & Meine Spiele (Smoke)', () => {
     void mockApi
     await signIn(page)
     await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
+    await page.getByRole('button', { name: /Anzeigename/ }).click()
     await page.locator('#settings-name').fill('Anna Meier')
     await page.getByRole('button', { name: 'Absenden' }).click()
     // Toast bestätigt die Zuordnung
-    await expect(page.getByText(/zugeordnet/)).toBeVisible()
+    await expect(page.locator('.toast__message').filter({ hasText: /zugeordnet/ })).toBeVisible()
   })
 
   test('„Meine Spiele"-Filter zeigt die eigenen Runden', async ({ page, mockApi }) => {

@@ -151,6 +151,7 @@
     "SignedIn": "Angemeldet 🎉",
     "DisplayNameLabel": "Anzeigename",
     "DisplayNamePlaceholder": "Dein Name",
+    "NameHint": "Wähle deinen Anzeigenamen — passende Runden werden automatisch dir zugeordnet.",
     "NameSaved": "Name gespeichert.",
     "NameClaimed": "Name gespeichert · {count} Runden zugeordnet.",
     "MyStats": "Meine Statistik"
