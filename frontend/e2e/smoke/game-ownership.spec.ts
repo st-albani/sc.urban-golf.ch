@@ -13,14 +13,27 @@ async function signIn(page: import('@playwright/test').Page) {
 }
 
 test.describe('Spiel-Ownership (Smoke)', () => {
+  test('eingeloggt ist man automatisch als Spieler 1 („Du") dabei', async ({ page, mockApi }) => {
+    void mockApi
+    await signIn(page)
+
+    // Ohne einen Anzeigenamen zu setzen: die „Du"-Zeile ist automatisch da,
+    // mit dem Default-Namen aus der E-Mail (lokaler Teil).
+    await page.goto('/games/new')
+    const selfRow = page.locator('.new-game__player--self')
+    await expect(selfRow).toBeVisible()
+    await expect(selfRow.locator('.new-game__self-badge')).toHaveText('Du')
+    await expect(selfRow.locator('.new-game__self-name')).toHaveText('spieler')
+  })
+
   test('eingeloggt erstelltes Spiel erscheint in „Meine Spiele"', async ({ page, mockApi }) => {
     void mockApi
     await signIn(page)
 
-    // Neues Spiel eingeloggt erstellen
+    // Neues Spiel eingeloggt erstellen — die „Du"-Zeile genügt als Spieler 1.
     await page.goto('/games/new')
     await page.locator('input#game-name').fill('Ownership-Testrunde')
-    await page.locator('.new-game__player-input').first().fill('Testspieler Eins')
+    await expect(page.locator('.new-game__player--self')).toBeVisible()
     await page.getByRole('button', { name: 'Spiel starten' }).click()
     await page.waitForURL(/\/games\/[^/]+\/1$/)
 
@@ -30,11 +43,10 @@ test.describe('Spiel-Ownership (Smoke)', () => {
     await expect(page.getByText('Ownership-Testrunde')).toBeVisible()
   })
 
-  test('eingeloggt mit Profil zeigt die „Du"-Zeile beim neuen Spiel', async ({ page, mockApi }) => {
+  test('der Anzeigename aus dem Profil erscheint in der „Du"-Zeile', async ({ page, mockApi }) => {
     void mockApi
     await signIn(page)
 
-    // Anzeigename setzen → etabliert die kanonische Identität (playerId)
     await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
     await page.getByRole('button', { name: /Anzeigename/ }).click()
     await page.locator('#settings-name').fill('Selbsttester')
@@ -42,12 +54,10 @@ test.describe('Spiel-Ownership (Smoke)', () => {
     await expect(page.locator('.toast__message')).toBeVisible()
     await page.keyboard.press('Escape')
 
-    // Neues Spiel: die „Du"-Zeile ist da, vorbefüllt und als „Du" markiert
     await page.goto('/games/new')
     const selfRow = page.locator('.new-game__player--self')
     await expect(selfRow).toBeVisible()
     await expect(selfRow.locator('.new-game__self-name')).toHaveText('Selbsttester')
-    await expect(selfRow.locator('.new-game__self-badge')).toHaveText('Du')
   })
 
   test('anonym gibt es keine „Du"-Zeile', async ({ page, mockApi }) => {

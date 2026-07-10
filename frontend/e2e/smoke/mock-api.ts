@@ -214,7 +214,15 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
   await page.route('**/api/auth/verify-otp', (route) => {
     const payload = JSON.parse(route.request().postData() || '{}') as { email: string; code: string }
     if (payload.code === '123456') {
-      authState.account = { id: 'acc-mock-1', email: payload.email, displayName: null, avatar: null, playerId: null }
+      // Wie im Backend: der Login etabliert die kanonische Identität
+      // (Default-Anzeigename aus dem lokalen E-Mail-Teil).
+      authState.account = {
+        id: 'acc-mock-1',
+        email: payload.email,
+        displayName: payload.email.split('@')[0],
+        avatar: null,
+        playerId: 'canon-mock-self',
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',

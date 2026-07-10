@@ -24,6 +24,44 @@ const toAccount = (r) => ({
   playerId: r.player_id ?? null,
 });
 
+// Default-Anzeigename aus der E-Mail (lokaler Teil), falls der Nutzer noch
+// keinen gesetzt hat — damit er trotzdem eine benannte Identität bekommt.
+const defaultNameFromEmail = (email) =>
+  (String(email).split('@')[0] || 'Spieler').slice(0, 30);
+
+/**
+ * Stellt sicher, dass ein Konto eine kanonische Spieler-Identität besitzt.
+ * Wird beim Login und beim Laden der Session (/me) aufgerufen, damit ein
+ * eingeloggter Nutzer beim Erstellen eines Spiels automatisch als Spieler
+ * (die „Du"-Zeile) auftaucht — auch ohne zuvor einen Anzeigenamen zu setzen.
+ * Akzeptiert eine DB-Zeile (snake_case) und gibt eine solche zurück.
+ */
+async function ensureCanonicalPlayer(account) {
+  const existingId = account.player_id ?? account.playerId ?? null;
+  if (existingId) return account;
+
+  const displayName = account.display_name ?? account.displayName ?? null;
+  const name = (displayName && displayName.trim()) || defaultNameFromEmail(account.email);
+  const playerId = generatePlayerId();
+
+  return await transaction(async (client) => {
+    await client.query(
+      `INSERT INTO players (id, name) VALUES ($1, $2) ON CONFLICT (id) DO NOTHING`,
+      [playerId, name],
+    );
+    const updated = await client.query(
+      `UPDATE accounts SET display_name = COALESCE(display_name, $2), player_id = $3 WHERE id = $1
+       RETURNING id, email, display_name, avatar, player_id`,
+      [account.id, name, playerId],
+    );
+    await client.query(
+      `INSERT INTO account_players (account_id, player_id) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+      [account.id, playerId],
+    );
+    return updated.rows[0];
+  });
+}
+
 export default async function (fastify, _opts) {
   // Einmalcode anfordern. Antwortet immer 200 (kein Account-Enumeration-Leak).
   fastify.post('/request-otp', {
@@ -110,6 +148,10 @@ export default async function (fastify, _opts) {
         [account.id, hashToken(token), new Date(Date.now() + SESSION_TTL_MS)],
       );
       reply.setCookie(SESSION_COOKIE, token, sessionCookieOptions());
+
+      // Jedes eingeloggte Konto bekommt garantiert eine kanonische Identität,
+      // damit es beim Erstellen eines Spiels automatisch als Spieler auftaucht.
+      account = await ensureCanonicalPlayer(account);
     } catch (err) {
       request.log.error(err);
       return reply.code(500).send({ error: 'Database error' });
@@ -118,11 +160,17 @@ export default async function (fastify, _opts) {
     return reply.send({ account: toAccount(account) });
   });
 
-  // Aktuelle Session/Account.
+  // Aktuelle Session/Account. Backfillt bei Bedarf die kanonische Identität,
+  // damit auch bestehende Sessions (vor der Umstellung) sie beim App-Start
+  // erhalten.
   fastify.get('/me', async (request, reply) => {
     try {
       const account = await getAccountFromRequest(request);
       if (!account) return reply.code(401).send({ error: 'unauthenticated' });
+      if (!account.playerId) {
+        const updated = await ensureCanonicalPlayer(account);
+        return reply.send({ account: toAccount(updated) });
+      }
       return reply.send({ account });
     } catch (err) {
       request.log.error(err);
