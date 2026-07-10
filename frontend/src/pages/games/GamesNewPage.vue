@@ -57,14 +57,32 @@
                 <span class="new-game__self-name">{{ player.name }}</span>
                 <CheckBadgeIcon class="new-game__registered-icon" :aria-label="$t('Games.NewGame.Registered')" />
               </div>
-              <input
-                v-else
-                type="text"
-                v-model="player.name"
-                :placeholder="$t('Games.NewGame.PlayerNamePlaceholder')"
-                maxlength="30"
-                class="field new-game__player-input"
-              />
+              <div v-else class="new-game__input-wrap">
+                <input
+                  type="text"
+                  v-model="player.name"
+                  :placeholder="$t('Games.NewGame.PlayerNamePlaceholder')"
+                  maxlength="30"
+                  class="field new-game__player-input"
+                  autocomplete="off"
+                  @focus="onNameFocus(player)"
+                  @input="onNameInput(player)"
+                />
+                <ul v-if="searchRowId === player.id && suggestions.length" class="new-game__suggest">
+                  <li v-for="r in suggestions" :key="r.id">
+                    <button
+                      type="button"
+                      class="new-game__suggest-item"
+                      @mousedown.prevent
+                      @click="selectRegistered(player, r)"
+                    >
+                      <PlayerAvatar :name="r.name" :src="r.avatar" size="xs" color="var(--color-player-3)" />
+                      <span class="new-game__suggest-name">{{ r.name }}</span>
+                      <CheckBadgeIcon class="new-game__suggest-badge" :aria-label="$t('Games.NewGame.Registered')" />
+                    </button>
+                  </li>
+                </ul>
+              </div>
 
               <button
                 type="button"
@@ -78,51 +96,15 @@
             </li>
           </transition-group>
 
-          <div class="new-game__extra-actions">
-            <button
-              v-if="canAddSelf"
-              type="button"
-              class="new-game__add-self"
-              @click="addSelfRow"
-            >
-              <UserIcon class="w-4 h-4" />
-              {{ $t('Games.NewGame.AddYou') }}
-            </button>
-
-            <button
-              v-if="!searchOpen"
-              type="button"
-              class="new-game__add-self"
-              @click="searchOpen = true"
-            >
-              <UserPlusIcon class="w-4 h-4" />
-              {{ $t('Games.NewGame.SearchRegistered') }}
-            </button>
-          </div>
-
-          <div v-if="searchOpen" class="new-game__search">
-            <div class="new-game__search-field">
-              <MagnifyingGlassIcon class="w-4 h-4 new-game__search-icon" />
-              <input
-                v-model="searchTerm"
-                type="text"
-                class="field new-game__search-input"
-                :placeholder="$t('Games.NewGame.SearchPlaceholder')"
-              />
-            </div>
-            <ul v-if="searchResults.length" class="new-game__results">
-              <li v-for="r in searchResults" :key="r.id">
-                <button type="button" class="new-game__result" @click="addRegistered(r)">
-                  <PlayerAvatar :name="r.name" :src="r.avatar" size="sm" color="var(--color-player-3)" />
-                  <span class="new-game__result-name">{{ r.name }}</span>
-                  <PlusIcon class="w-4 h-4" />
-                </button>
-              </li>
-            </ul>
-            <p v-else-if="searchTerm.trim().length >= 2 && !searching" class="t-muted new-game__search-empty">
-              {{ $t('Games.NewGame.SearchEmpty') }}
-            </p>
-          </div>
+          <button
+            v-if="canAddSelf"
+            type="button"
+            class="new-game__add-self"
+            @click="addSelfRow"
+          >
+            <UserIcon class="w-4 h-4" />
+            {{ $t('Games.NewGame.AddYou') }}
+          </button>
 
           <AppButton
             variant="secondary"
@@ -137,6 +119,8 @@
             </template>
             {{ $t('Games.NewGame.AddPlayer') }}
           </AppButton>
+
+          <p class="t-muted new-game__hint">{{ $t('Games.NewGame.SearchHint') }}</p>
         </div>
       </section>
 
@@ -169,7 +153,7 @@ import { useI18n } from 'vue-i18n'
 import { nanoid } from 'nanoid'
 import { useToast } from '@/composables/useToast'
 import { fetchGame, fetchGamePlayers, createOrUpdatePlayers, createOrUpdateGame, searchPlayers, type RegisteredPlayer } from '@/services/api'
-import { PlusIcon, TrashIcon, PlayIcon, CheckIcon, UserIcon, UserPlusIcon, MagnifyingGlassIcon, CheckBadgeIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, TrashIcon, PlayIcon, CheckIcon, UserIcon, CheckBadgeIcon } from '@heroicons/vue/24/outline'
 import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -220,48 +204,47 @@ function addSelfRow() {
   }
 }
 
-// ---- Spielersuche (Phase 2): registrierte Spieler hinzufügen ----
-const searchOpen = ref(false)
-const searchTerm = ref('')
-const searchResults = ref<RegisteredPlayer[]>([])
-const searching = ref(false)
+// ---- Spielersuche (Phase 2): Autocomplete in der Namenseingabe ----
+// Beim Tippen eines Spielernamens werden passende registrierte Spieler als
+// Vorschlag eingeblendet. Auswählen verknüpft die kanonische Identität;
+// nichts auswählen lässt die Zeile ein Freitext-Gast bleiben.
+const searchRowId = ref<string | null>(null)
+const suggestions = ref<RegisteredPlayer[]>([])
 let searchTimer: ReturnType<typeof setTimeout> | undefined
 
-watch(searchTerm, (term) => {
+function onNameFocus(row: Row) {
+  searchRowId.value = row.id
+  suggestions.value = []
+}
+
+function onNameInput(row: Row) {
+  searchRowId.value = row.id
   clearTimeout(searchTimer)
-  const q = term.trim()
+  const q = row.name.trim()
   if (q.length < 2) {
-    searchResults.value = []
-    searching.value = false
+    suggestions.value = []
     return
   }
-  searching.value = true
   searchTimer = setTimeout(async () => {
+    // Zwischenzeitlicher Fokuswechsel? Dann nichts anzeigen.
+    if (searchRowId.value !== row.id) return
     try {
       const results = await searchPlayers(q)
-      // Bereits im Spiel befindliche IDs ausblenden.
       const present = new Set(players.value.map((p) => p.id))
-      searchResults.value = results.filter((r) => !present.has(r.id))
+      suggestions.value = results.filter((r) => !present.has(r.id))
     } catch {
-      searchResults.value = []
-    } finally {
-      searching.value = false
+      suggestions.value = []
     }
   }, 250)
-})
+}
 
-function addRegistered(p: RegisteredPlayer) {
-  if (players.value.some((x) => x.id === p.id)) return
-  const row: Row = { id: p.id, name: p.name, registered: true, avatar: p.avatar }
-  // Eine noch leere Freitext-Einzelzeile ersetzen, sonst anhängen.
-  if (players.value.length === 1 && players.value[0].name === '' && !players.value[0].registered) {
-    players.value = [row]
-  } else {
-    players.value.push(row)
-  }
-  searchTerm.value = ''
-  searchResults.value = []
-  searchOpen.value = false
+function selectRegistered(row: Row, r: RegisteredPlayer) {
+  suggestions.value = []
+  searchRowId.value = null
+  if (players.value.some((x) => x.id === r.id)) return
+  const idx = players.value.findIndex((p) => p.id === row.id)
+  if (idx === -1) return
+  players.value.splice(idx, 1, { id: r.id, name: r.name, registered: true, avatar: r.avatar })
 }
 
 // Beim Öffnen eines neuen Spiels die „Du"-Zeile automatisch anbieten.
@@ -463,17 +446,12 @@ async function saveGame() {
   color: color-mix(in oklab, var(--player-accent) 75%, var(--text-strong));
 }
 
-.new-game__extra-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
 .new-game__add-self {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  align-self: flex-start;
   padding: 0.4rem 0.85rem;
   border-radius: var(--radius-pill);
   border: 1px dashed var(--card-border);
@@ -485,50 +463,52 @@ async function saveGame() {
 }
 .new-game__add-self:hover { color: var(--primary); border-color: var(--primary); }
 
-.new-game__search {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
+.new-game__hint { font-size: var(--text-xs); margin-top: -0.5rem; }
 
-.new-game__search-field { position: relative; display: flex; align-items: center; }
-.new-game__search-icon {
+/* Autocomplete: Vorschläge registrierter Spieler unter der Namenseingabe. */
+.new-game__input-wrap { position: relative; min-width: 0; }
+
+.new-game__suggest {
   position: absolute;
-  left: 0.75rem;
-  color: var(--text-muted);
-  pointer-events: none;
-}
-.new-game__search-input { width: 100%; padding-left: 2.25rem; }
-
-.new-game__results {
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 20;
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.15rem;
+  background: var(--card-bg);
   border: 1px solid var(--card-border);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  box-shadow: var(--shadow-elev-2);
+  max-height: 14rem;
+  overflow-y: auto;
 }
 
-.new-game__result {
+.new-game__suggest-item {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   width: 100%;
-  padding: 0.55rem 0.75rem;
-  background: transparent;
+  padding: 0.5rem 0.6rem;
   border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--text-default);
   cursor: pointer;
   transition: background 150ms;
 }
-.new-game__result:hover { background: color-mix(in oklab, var(--text-default) 6%, transparent); }
-.new-game__result-name { flex: 1 1 auto; text-align: left; font-weight: 600; font-size: var(--text-sm); }
-.new-game__result :deep(svg:last-child) { color: var(--text-muted); flex-shrink: 0; }
-
-.new-game__search-empty { font-size: var(--text-sm); padding: 0.25rem 0.25rem 0; }
+.new-game__suggest-item:hover { background: color-mix(in oklab, var(--text-default) 7%, transparent); }
+.new-game__suggest-name { flex: 1 1 auto; text-align: left; font-weight: 600; font-size: var(--text-sm); }
+.new-game__suggest-badge {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+  color: color-mix(in oklab, var(--color-player-3) 80%, var(--text-strong));
+}
 
 .new-game__remove {
   width: 2.5rem;

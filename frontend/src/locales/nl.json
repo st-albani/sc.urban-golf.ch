@@ -262,9 +262,7 @@
       "You": "Jij",
       "AddYou": "Dat ben ik",
       "Registered": "Geregistreerd",
-      "SearchRegistered": "Geregistreerde speler zoeken",
-      "SearchPlaceholder": "Voer een naam in …",
-      "SearchEmpty": "Geen geregistreerde spelers gevonden.",
+      "SearchHint": "Tip: geregistreerde spelers worden voorgesteld terwijl je een naam typt.",
       "Errors": {
         "GameAndPlayerRequired": "Voer een spelnaam en minimaal één speler in.",
         "SaveFailed": "Fout bij het opslaan van het spel.",

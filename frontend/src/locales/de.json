@@ -262,9 +262,7 @@
       "You": "Du",
       "AddYou": "Das bin ich",
       "Registered": "Registriert",
-      "SearchRegistered": "Registrierten Spieler suchen",
-      "SearchPlaceholder": "Name eingeben …",
-      "SearchEmpty": "Keine registrierten Spieler gefunden.",
+      "SearchHint": "Tipp: Beim Tippen eines Namens werden registrierte Spieler vorgeschlagen.",
       "Errors": {
         "GameAndPlayerRequired": "Bitte Spielname und mindestens einen Spieler angeben.",
         "SaveFailed": "Fehler beim Speichern des Spiels.",
