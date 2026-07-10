@@ -165,6 +165,69 @@ export const schemas = Object.freeze({
       additionalProperties: false,
     },
   },
+
+  postAuthRequestOtp: {
+    body: {
+      type: 'object',
+      required: ['email'],
+      properties: {
+        email: {
+          type: 'string',
+          minLength: 3,
+          maxLength: VALIDATION.EMAIL_MAX_LENGTH,
+          pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+
+  postAuthVerifyOtp: {
+    body: {
+      type: 'object',
+      required: ['email', 'code'],
+      properties: {
+        email: {
+          type: 'string',
+          minLength: 3,
+          maxLength: VALIDATION.EMAIL_MAX_LENGTH,
+          pattern: '^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$',
+        },
+        code: {
+          type: 'string',
+          pattern: '^[0-9]{4,8}$',
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+
+  postAuthProfile: {
+    body: {
+      type: 'object',
+      required: ['displayName'],
+      properties: {
+        displayName: {
+          type: 'string',
+          minLength: 1,
+          maxLength: VALIDATION.NAME_MAX_LENGTH,
+        },
+      },
+      additionalProperties: false,
+    },
+  },
+
+  postAuthAvatar: {
+    body: {
+      type: 'object',
+      required: ['avatar'],
+      properties: {
+        // base64-data:-URL eines clientseitig verkleinerten Bildes (~<50 KB).
+        avatar: { type: 'string', maxLength: 500000 },
+      },
+      additionalProperties: false,
+    },
+  },
 });
 
 export { playerSchema, gameRowSchema, scoreRowSchema };

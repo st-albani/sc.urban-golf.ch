@@ -93,24 +93,39 @@
 <script setup lang="ts">
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AppButton from '@/components/ui/AppButton.vue'
-import { ref, computed, watchEffect } from 'vue'
+import { ref, computed, watch, watchEffect, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { nanoid } from 'nanoid'
 import { useToast } from '@/composables/useToast'
 import { fetchGame, fetchGamePlayers, createOrUpdatePlayers, createOrUpdateGame } from '@/services/api'
 import { PlusIcon, TrashIcon, PlayIcon, CheckIcon } from '@heroicons/vue/24/outline'
+import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 const { error: showError } = useToast()
+const auth = useAuthStore()
 const gameId = computed(() => route.params.gameId as string | undefined)
 
 const gameName = ref('')
 const players = ref([{ id: nanoid(), name: '' }])
 const isEditing = computed(() => !!gameId.value)
 const isSaving = ref(false)
+
+// Namensvorschlag: bei einem neuen Spiel den eigenen Namen als ersten Spieler
+// vorschlagen — nur einmal und nur, wenn das Feld noch leer ist.
+let nameSuggested = false
+function suggestOwnName() {
+  if (nameSuggested || isEditing.value) return
+  if (auth.displayName && players.value[0] && players.value[0].name === '') {
+    players.value[0].name = auth.displayName
+    nameSuggested = true
+  }
+}
+onMounted(suggestOwnName)
+watch(() => auth.displayName, suggestOwnName)
 
 async function loadGame(id: string) {
   try {

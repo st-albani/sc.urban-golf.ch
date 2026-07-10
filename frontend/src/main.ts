@@ -17,6 +17,8 @@ import nl from './locales/nl.json'
 // Axios configuration
 axios.defaults.baseURL = import.meta.env.VITE_API_BASEURL
 axios.defaults.headers.common['Content-Type'] = 'application/json'
+// Session-Cookies mitsenden (optionale Identität via E-Mail-OTP).
+axios.defaults.withCredentials = true
 
 // Detect locale: saved preference > browser language > fallback 'en'
 function detectLocale(): string {

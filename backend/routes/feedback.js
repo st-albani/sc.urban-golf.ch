@@ -1,16 +1,6 @@
 import { query } from '../db/pg.js';
-import nodemailer from 'nodemailer';
 import { schemas } from '@urban-golf/contract';
-
-const transporter = nodemailer.createTransport({
-  host: 'smtp-relay.brevo.com',
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.BREVO_SMTP_USER,
-    pass: process.env.BREVO_SMTP_PASS,
-  },
-});
+import { sendMail, isMailConfigured } from '../utils/mailer.js';
 
 export default async function (fastify, _opts) {
   fastify.post('/', {
@@ -36,10 +26,9 @@ export default async function (fastify, _opts) {
     }
 
     // Benachrichtigung senden (optional, darf nicht fehlschlagen)
-    if (process.env.BREVO_SMTP_USER && process.env.ADMIN_EMAIL) {
+    if (isMailConfigured() && process.env.ADMIN_EMAIL) {
       try {
-        await transporter.sendMail({
-          from: '"Urban-Golf.ch - ScoreCard" <info@urban-golf.ch>',
+        await sendMail({
           to: process.env.ADMIN_EMAIL,
           subject: '🎉 Neues Feedback eingegangen',
           text: `Bewertung: ${rating}/5\nVon: ${name || 'Anonym'} <${email || 'keine Email'}>\n\n${message}`,

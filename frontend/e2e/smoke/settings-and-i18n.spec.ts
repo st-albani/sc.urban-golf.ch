@@ -7,8 +7,11 @@ test.describe('Settings & i18n (Smoke)', () => {
 
     // Settings-Cog im TopBar
     // Settings-Cog hat ein lokalisiertes aria-label (de = "Einstellungen")
-await page.getByRole('button', { name: /Einstellungen|Settings/i }).click()
+await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
     await expect(page.locator('.sheet')).toBeVisible()
+
+    // In das Design-Sub-Panel navigieren
+    await page.getByRole('button', { name: /Design/ }).click()
 
     // Theme auf Dark stellen
     await page.getByRole('button', { name: 'Dunkel', exact: true }).click()
@@ -23,7 +26,8 @@ await page.getByRole('button', { name: /Einstellungen|Settings/i }).click()
     void mockApi
     await page.goto('/')
     // Settings-Cog hat ein lokalisiertes aria-label (de = "Einstellungen")
-await page.getByRole('button', { name: /Einstellungen|Settings/i }).click()
+await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
+    await page.getByRole('button', { name: /Sprache/ }).click()
     await page.getByRole('button', { name: /English/ }).click()
 
     // Sheet schließen

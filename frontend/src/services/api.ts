@@ -120,3 +120,116 @@ export async function submitFeedback(payload: FeedbackPayload): Promise<{ succes
   const { data } = await axios.post<{ success: boolean }>(API_ROUTES.FEEDBACK, payload)
   return data
 }
+
+// ---- Auth (optionale Identität via E-Mail-OTP) ----
+
+export interface Account {
+  id: string
+  email: string
+  displayName: string | null
+  avatar: string | null
+}
+
+export async function requestOtp(email: string): Promise<void> {
+  await axios.post(`${API_ROUTES.AUTH}/request-otp`, { email })
+}
+
+export async function verifyOtp(email: string, code: string): Promise<Account> {
+  const { data } = await axios.post<{ account: Account }>(`${API_ROUTES.AUTH}/verify-otp`, { email, code })
+  return data.account
+}
+
+export async function fetchMe(): Promise<Account | null> {
+  try {
+    const { data } = await axios.get<{ account: Account }>(`${API_ROUTES.AUTH}/me`)
+    return data.account
+  } catch {
+    // 401 (nicht eingeloggt) wird vom Interceptor still durchgereicht.
+    return null
+  }
+}
+
+export async function logout(): Promise<void> {
+  await axios.post(`${API_ROUTES.AUTH}/logout`)
+}
+
+export async function setProfile(displayName: string): Promise<{ account: Account; claimedCount: number }> {
+  const { data } = await axios.post<{ account: Account; claimedCount: number }>(
+    `${API_ROUTES.AUTH}/profile`,
+    { displayName },
+  )
+  return data
+}
+
+export async function fetchMyGames(): Promise<GameSummary[]> {
+  const { data } = await axios.get<GamesSummaryResponse>(`${API_ROUTES.AUTH}/my-games`)
+  return data.games
+}
+
+export interface TrendPoint {
+  gameId: string
+  name: string
+  date: string
+  avg: number
+}
+
+export interface Stats {
+  rounds: number
+  overallAvg: number | null
+  bestRoundAvg: number | null
+  worstRoundAvg: number | null
+  winRate: number | null
+  wins: number
+  trend: TrendPoint[]
+}
+
+export async function fetchStats(): Promise<Stats> {
+  const { data } = await axios.get<Stats>(`${API_ROUTES.AUTH}/stats`)
+  return data
+}
+
+export interface Opponent {
+  name: string
+  rounds: number
+}
+
+export interface HeadToHead {
+  name: string
+  shared: number
+  wins: number
+  losses: number
+  ties: number
+  myAvg: number | null
+  opponentAvg: number | null
+}
+
+export async function fetchOpponents(): Promise<Opponent[]> {
+  const { data } = await axios.get<{ opponents: Opponent[] }>(`${API_ROUTES.AUTH}/opponents`)
+  return data.opponents
+}
+
+export async function fetchHeadToHead(name: string): Promise<HeadToHead> {
+  const { data } = await axios.get<HeadToHead>(`${API_ROUTES.AUTH}/head-to-head`, { params: { name } })
+  return data
+}
+
+export interface AccountSummary {
+  email: string
+  displayName: string | null
+  playerNames: string[]
+  rounds: number
+}
+
+export async function fetchAccountSummary(): Promise<AccountSummary> {
+  const { data } = await axios.get<AccountSummary>(`${API_ROUTES.AUTH}/account-summary`)
+  return data
+}
+
+export async function deleteAccount(keepScores: boolean): Promise<void> {
+  await axios.delete(`${API_ROUTES.AUTH}/account`, { params: { keepScores } })
+}
+
+export async function setAvatar(avatar: string): Promise<Account> {
+  const { data } = await axios.post<{ account: Account }>(`${API_ROUTES.AUTH}/avatar`, { avatar })
+  return data.account
+}

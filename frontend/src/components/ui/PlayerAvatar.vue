@@ -1,12 +1,13 @@
 <template>
   <span
     class="avatar"
-    :class="[`avatar--${size}`, ringed && 'avatar--ringed']"
+    :class="[`avatar--${size}`, ringed && 'avatar--ringed', src && 'avatar--image']"
     :style="{ '--avatar-color': color }"
     :title="name"
     :aria-label="name"
   >
-    {{ initials }}
+    <img v-if="src" :src="src" class="avatar__img" alt="" />
+    <template v-else>{{ initials }}</template>
   </span>
 </template>
 
@@ -18,9 +19,11 @@ const props = withDefaults(defineProps<{
   color?: string
   size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl'
   ringed?: boolean
+  src?: string | null
 }>(), {
   size: 'md',
   ringed: false,
+  src: null,
 })
 
 const initials = computed(() => {
@@ -57,5 +60,20 @@ const initials = computed(() => {
 
 .avatar--ringed {
   box-shadow: 0 0 0 3px color-mix(in oklab, var(--avatar-color) 25%, transparent);
+}
+
+/* Mit Bild: keine Tint-Fläche, Bild füllt den Kreis. */
+.avatar--image {
+  background: var(--card-bg);
+  overflow: hidden;
+  padding: 0;
+}
+
+.avatar__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 999px;
+  display: block;
 }
 </style>

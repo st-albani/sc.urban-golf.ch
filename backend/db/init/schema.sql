@@ -246,5 +246,61 @@ ALTER TABLE ONLY public.scores
     ADD CONSTRAINT fk_scores_player FOREIGN KEY (player_id) REFERENCES public.players(id) ON DELETE CASCADE;
 
 --
+-- Optionale Identität: Accounts, OTP-Challenges, Sessions
+--
+
+CREATE TABLE public.accounts (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    email text NOT NULL UNIQUE,
+    display_name text,
+    avatar text,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE public.otp_codes (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    email text NOT NULL,
+    code_hash text NOT NULL,
+    attempts integer NOT NULL DEFAULT 0,
+    expires_at timestamptz NOT NULL,
+    consumed_at timestamptz,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_otp_codes_email ON public.otp_codes USING btree (email);
+
+CREATE TABLE public.sessions (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id uuid NOT NULL,
+    token_hash text NOT NULL UNIQUE,
+    expires_at timestamptz NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_sessions_account ON public.sessions USING btree (account_id);
+
+ALTER TABLE ONLY public.sessions
+    ADD CONSTRAINT fk_sessions_account FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+--
+-- Verknüpfung Account ↔ Spieler-Einträge
+--
+
+CREATE TABLE public.account_players (
+    account_id uuid NOT NULL,
+    player_id text NOT NULL,
+    created_at timestamptz DEFAULT now(),
+    CONSTRAINT account_players_pkey PRIMARY KEY (account_id, player_id)
+);
+
+CREATE INDEX idx_account_players_player ON public.account_players USING btree (player_id);
+
+ALTER TABLE ONLY public.account_players
+    ADD CONSTRAINT fk_account_players_account FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY public.account_players
+    ADD CONSTRAINT fk_account_players_player FOREIGN KEY (player_id) REFERENCES public.players(id) ON DELETE CASCADE;
+
+--
 -- PostgreSQL database dump complete
 --

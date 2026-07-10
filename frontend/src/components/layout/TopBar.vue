@@ -47,14 +47,21 @@
           </router-link>
         </nav>
 
-        <AppIconButton
-          :label="$t('General.Settings')"
-          variant="ghost"
-          size="md"
+        <button
+          type="button"
+          class="top-bar__profile"
+          :aria-label="$t('Profile.Open')"
           @click="settingsOpen = true"
         >
-          <Cog6ToothIcon class="w-5 h-5" />
-        </AppIconButton>
+          <PlayerAvatar
+            v-if="auth.isLoggedIn"
+            :name="avatarName"
+            :src="auth.avatar"
+            color="var(--color-player-1)"
+            size="sm"
+          />
+          <UserCircleIcon v-else class="w-6 h-6 top-bar__profile-icon" />
+        </button>
       </div>
     </div>
 
@@ -67,16 +74,20 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useOnline } from '@vueuse/core'
-import { ArrowLeftIcon, Cog6ToothIcon } from '@heroicons/vue/24/outline'
+import { ArrowLeftIcon, UserCircleIcon } from '@heroicons/vue/24/outline'
 import AppIconButton from '@/components/ui/AppIconButton.vue'
+import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
 import SettingsSheet from '@/components/layout/SettingsSheet.vue'
+import { useAuthStore } from '@/stores/auth'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
 const isOnline = useOnline()
+const auth = useAuthStore()
 
 const settingsOpen = ref(false)
+const avatarName = computed(() => auth.displayName || auth.account?.email || 'Profil')
 
 const desktopItems = [
   { to: '/games', label: 'General.Games' },
@@ -207,4 +218,25 @@ function isActive(path: string) {
   background: color-mix(in oklab, var(--primary) 18%, transparent);
   color: var(--primary);
 }
+
+.top-bar__profile {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  border: 0;
+  background: transparent;
+  color: var(--text-default);
+  padding: 0;
+  cursor: pointer;
+  transition: background 150ms;
+}
+
+.top-bar__profile:hover {
+  background: color-mix(in oklab, var(--text-default) 8%, transparent);
+}
+
+.top-bar__profile:active { transform: scale(0.94); }
 </style>

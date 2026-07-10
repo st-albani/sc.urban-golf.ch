@@ -6,4 +6,5 @@ export const API_ROUTES = {
   PLAYERS: '/players',
   SCORES: '/scores',
   FEEDBACK: '/feedback',
+  AUTH: '/auth',
 } as const
