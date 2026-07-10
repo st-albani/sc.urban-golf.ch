@@ -119,6 +119,27 @@
       }
     }
   },
+  "Share": {
+    "Title": "Spel delen",
+    "EditWarning": "Iedereen met deze link kan scores invoeren.",
+    "LinkLabel": "Spellink",
+    "Copy": "Link kopiëren",
+    "Copied": "Gekopieerd!",
+    "Share": "Delen",
+    "ScanHint": "Scan om mee te doen",
+    "QrAlt": "QR-code voor de spellink"
+  },
+  "Join": {
+    "Title": "Deelnemen aan spel",
+    "StartCamera": "Camera starten",
+    "StopCamera": "Camera stoppen",
+    "ManualLabel": "Of plak een link/ID",
+    "ManualPlaceholder": "Link of spel-ID",
+    "Submit": "Deelnemen",
+    "InvalidRef": "Geen geldige spellink.",
+    "CameraDenied": "Geen cameratoegang. Voer de link handmatig in.",
+    "CameraUnsupported": "Camera niet beschikbaar. Voer de link handmatig in."
+  },
   "Feedback": {
     "Title": "Feedback over de scorecard",
     "Subtitle": "Wat kunnen we beter doen? Alle feedback helpt.",

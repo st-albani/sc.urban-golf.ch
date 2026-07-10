@@ -119,6 +119,27 @@
       }
     }
   },
+  "Share": {
+    "Title": "Share game",
+    "EditWarning": "Anyone with this link can enter scores.",
+    "LinkLabel": "Game link",
+    "Copy": "Copy link",
+    "Copied": "Copied!",
+    "Share": "Share",
+    "ScanHint": "Scan to join",
+    "QrAlt": "QR code for the game link"
+  },
+  "Join": {
+    "Title": "Join game",
+    "StartCamera": "Start camera",
+    "StopCamera": "Stop camera",
+    "ManualLabel": "Or paste a link/ID",
+    "ManualPlaceholder": "Link or game ID",
+    "Submit": "Join",
+    "InvalidRef": "Not a valid game link.",
+    "CameraDenied": "No camera access. Enter the link manually instead.",
+    "CameraUnsupported": "Camera not available. Enter the link manually instead."
+  },
   "Feedback": {
     "Title": "Feedback on the Scorecard",
     "Subtitle": "How can we improve? Every piece of feedback helps.",

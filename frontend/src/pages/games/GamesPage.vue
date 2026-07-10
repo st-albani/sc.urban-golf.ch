@@ -15,18 +15,29 @@
               <h1 class="t-title games-detail__title" :title="gameName">
                 {{ displayName }}
               </h1>
-              <AppIconButton
-                :label="$t('Games.HoleView.EditGame')"
-                variant="outline"
-                size="md"
-                @click="$router.push(`/games/new/${gameId}`)"
-              >
-                <PencilSquareIcon class="w-5 h-5" />
-              </AppIconButton>
+              <div v-if="!isSpectator" class="games-detail__title-actions">
+                <AppIconButton
+                  :label="$t('Share.Title')"
+                  variant="outline"
+                  size="md"
+                  @click="shareOpen = true"
+                >
+                  <ShareIcon class="w-5 h-5" />
+                </AppIconButton>
+                <AppIconButton
+                  :label="$t('Games.HoleView.EditGame')"
+                  variant="outline"
+                  size="md"
+                  @click="$router.push(`/games/new/${gameId}`)"
+                >
+                  <PencilSquareIcon class="w-5 h-5" />
+                </AppIconButton>
+              </div>
             </div>
 
-            <!-- Direkter Loch-Zugriff: Chip-Leiste zum Springen in die Hole-View. -->
-            <div v-if="holes.length" class="games-detail__holes scroll-hide" role="list">
+            <!-- Direkter Loch-Zugriff: Chip-Leiste zum Springen in die Hole-View.
+                 Im Zuschauer-Modus ausgeblendet (kein Schreib-Einstieg). -->
+            <div v-if="holes.length && !isSpectator" class="games-detail__holes scroll-hide" role="list">
               <router-link
                 v-for="n in holes"
                 :key="n"
@@ -53,6 +64,8 @@
 
           <ScoreCard />
         </template>
+
+        <ShareGameSheet v-model="shareOpen" :game-id="gameId" :game-name="gameName" />
       </div>
     </template>
   </DefaultLayout>
@@ -63,33 +76,65 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import GamesListCompact from '@/components/games/GamesListCompact.vue'
 import ScoreCard from '@/components/games/ScoreCard.vue'
 import GamesHoleView from '@/components/games/GamesHoleView.vue'
+import ShareGameSheet from '@/components/games/ShareGameSheet.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import AppIconButton from '@/components/ui/AppIconButton.vue'
 
-import { PencilSquareIcon, PlusIcon, CheckIcon } from '@heroicons/vue/24/outline'
-import { computed, provide, watchEffect } from 'vue'
+import { PencilSquareIcon, PlusIcon, CheckIcon, ShareIcon } from '@heroicons/vue/24/outline'
+import { computed, provide, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
 import { useGamesDetailData } from '@/composables/useGamesDetailData'
 import { useHoleCompletion } from '@/composables/useHoleCompletion'
-import { gamesDetailKey } from '@/types'
+import { useLivePolling } from '@/composables/useLivePolling'
+import { fetchScores } from '@/services/api'
+import { gamesDetailKey, type ScoreMap } from '@/types'
+import { mergeServerScores, scoresToMap } from '@/utils/mergeScores'
 import { shortGameName } from '@/utils/format'
 import { VALIDATION } from '@/constants'
 
 const route = useRoute()
 const { t } = useI18n()
+const shareOpen = ref(false)
 const gameId = computed(() => route.params.gameId as string)
 const hasValidGameId = computed(() =>
   typeof gameId.value === 'string' && /^[a-zA-Z0-9_-]{10,30}$/.test(gameId.value)
 )
 const isHoleView = computed(() => 'holeId' in route.params)
+// Read-only-Zuschauer: ?spectator blendet alle Schreib-Einstiege aus.
+const isSpectator = computed(() => route.query.spectator !== undefined)
 
 const { players, scores, holes, gameName, error, load: loadGamesDetailData } = useGamesDetailData(gameId)
+const lockedScores = ref<Set<string>>(new Set())
 
-provide(gamesDetailKey, { players, scores, holes, gameName, error, load: loadGamesDetailData })
+provide(gamesDetailKey, { players, scores, holes, gameName, error, load: loadGamesDetailData, lockedScores })
 
 const { holeState } = useHoleCompletion(players, scores)
+
+// ---- Live-Aktualisierung per Polling ----
+function cloneScores(s: ScoreMap): ScoreMap {
+  const out: ScoreMap = {}
+  for (const pid in s) out[pid] = { ...s[pid] }
+  return out
+}
+
+let lastServer: ScoreMap = {}
+
+async function pollScores() {
+  if (!hasValidGameId.value) return
+  const data = await fetchScores(gameId.value)
+  const server = scoresToMap(data)
+  scores.value = mergeServerScores(scores.value, server, lastServer, lockedScores.value)
+  lastServer = server
+  const holeSet = new Set(holes.value)
+  for (const e of data) holeSet.add(e.hole)
+  if (holeSet.size !== holes.value.length) {
+    holes.value = [...holeSet].sort((a, b) => a - b)
+  }
+}
+
+useLivePolling(pollScores, 4000)
 
 /** Beschreibt den Chip-Zustand für Screenreader (nicht nur farblich). */
 function pillAriaLabel(holeNum: number) {
@@ -112,6 +157,8 @@ const nextNewHole = computed(() => {
 watchEffect(async () => {
   if (!hasValidGameId.value) return
   await loadGamesDetailData()
+  // Baseline für den Poll-Diff (Reads nach await erzeugen keine Watch-Deps).
+  lastServer = cloneScores(scores.value)
 })
 </script>
 
@@ -140,6 +187,13 @@ watchEffect(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.games-detail__title-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
 }
 
 /* Hole-Pill-Leiste: direkter Zugriff auf Löcher von allen drei Scorecard-Views */
