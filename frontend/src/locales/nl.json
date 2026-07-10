@@ -259,6 +259,8 @@
       "StartGame": "Spel starten",
       "AddPlayer": "Speler toevoegen",
       "RemovePlayer": "Speler verwijderen",
+      "You": "Jij",
+      "AddYou": "Dat ben ik",
       "Errors": {
         "GameAndPlayerRequired": "Voer een spelnaam en minimaal één speler in.",
         "SaveFailed": "Fout bij het opslaan van het spel.",

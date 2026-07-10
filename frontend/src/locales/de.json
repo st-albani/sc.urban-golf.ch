@@ -259,6 +259,8 @@
       "StartGame": "Spiel starten",
       "AddPlayer": "Spieler hinzufügen",
       "RemovePlayer": "Spieler entfernen",
+      "You": "Du",
+      "AddYou": "Das bin ich",
       "Errors": {
         "GameAndPlayerRequired": "Bitte Spielname und mindestens einen Spieler angeben.",
         "SaveFailed": "Fehler beim Speichern des Spiels.",

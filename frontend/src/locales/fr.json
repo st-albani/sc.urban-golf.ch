@@ -259,6 +259,8 @@
       "StartGame": "Démarrer la partie",
       "AddPlayer": "Ajouter un joueur",
       "RemovePlayer": "Retirer le joueur",
+      "You": "Toi",
+      "AddYou": "C'est moi",
       "Errors": {
         "GameAndPlayerRequired": "Veuillez saisir un nom de partie et au moins un joueur.",
         "SaveFailed": "Échec de l'enregistrement de la partie.",

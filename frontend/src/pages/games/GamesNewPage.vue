@@ -32,16 +32,30 @@
               v-for="(player, index) in players"
               :key="player.id"
               class="new-game__player"
+              :class="{ 'new-game__player--self': isSelf(player) }"
               :style="{ '--player-accent': playerColor(index) }"
             >
               <span class="new-game__player-index">{{ index + 1 }}</span>
+
+              <div v-if="isSelf(player)" class="new-game__self">
+                <PlayerAvatar
+                  :name="player.name || $t('Games.NewGame.You')"
+                  :src="auth.avatar"
+                  size="sm"
+                  :color="playerColor(index)"
+                />
+                <span class="new-game__self-name">{{ player.name }}</span>
+                <span class="new-game__self-badge">{{ $t('Games.NewGame.You') }}</span>
+              </div>
               <input
+                v-else
                 type="text"
                 v-model="player.name"
                 :placeholder="$t('Games.NewGame.PlayerNamePlaceholder')"
                 maxlength="30"
                 class="field new-game__player-input"
               />
+
               <button
                 type="button"
                 class="new-game__remove"
@@ -53,6 +67,16 @@
               </button>
             </li>
           </transition-group>
+
+          <button
+            v-if="canAddSelf"
+            type="button"
+            class="new-game__add-self"
+            @click="addSelfRow"
+          >
+            <UserIcon class="w-4 h-4" />
+            {{ $t('Games.NewGame.AddYou') }}
+          </button>
 
           <AppButton
             variant="secondary"
@@ -99,7 +123,8 @@ import { useI18n } from 'vue-i18n'
 import { nanoid } from 'nanoid'
 import { useToast } from '@/composables/useToast'
 import { fetchGame, fetchGamePlayers, createOrUpdatePlayers, createOrUpdateGame } from '@/services/api'
-import { PlusIcon, TrashIcon, PlayIcon, CheckIcon } from '@heroicons/vue/24/outline'
+import { PlusIcon, TrashIcon, PlayIcon, CheckIcon, UserIcon } from '@heroicons/vue/24/outline'
+import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -114,18 +139,33 @@ const players = ref([{ id: nanoid(), name: '' }])
 const isEditing = computed(() => !!gameId.value)
 const isSaving = ref(false)
 
-// Namensvorschlag: bei einem neuen Spiel den eigenen Namen als ersten Spieler
-// vorschlagen — nur einmal und nur, wenn das Feld noch leer ist.
-let nameSuggested = false
-function suggestOwnName() {
-  if (nameSuggested || isEditing.value) return
-  if (auth.displayName && players.value[0] && players.value[0].name === '') {
-    players.value[0].name = auth.displayName
-    nameSuggested = true
+// Selbst-Markierung: ist der Nutzer eingeloggt mit kanonischer Identität,
+// wird die erste Zeile zur „Du"-Zeile — mit der stabilen Spieler-ID, damit
+// die Runde spielübergreifend korrekt der eigenen Statistik zugeordnet wird.
+// Der Name bleibt read-only (Änderung nur im Profil, sonst würde die kanonische
+// Identität versehentlich umbenannt). Optional: entfernbar (Scorekeeper) und
+// wieder hinzufügbar.
+function isSelf(player: { id: string }) {
+  return !!auth.playerId && player.id === auth.playerId
+}
+
+const hasSelfRow = computed(() => players.value.some(isSelf))
+const canAddSelf = computed(() => !isEditing.value && !!auth.playerId && !hasSelfRow.value)
+
+function addSelfRow() {
+  if (!auth.playerId || hasSelfRow.value) return
+  const meRow = { id: auth.playerId, name: auth.displayName || '' }
+  // Eine noch leere Einzelzeile ersetzen, sonst voranstellen.
+  if (players.value.length === 1 && players.value[0].name === '' && !isSelf(players.value[0])) {
+    players.value = [meRow]
+  } else {
+    players.value.unshift(meRow)
   }
 }
-onMounted(suggestOwnName)
-watch(() => auth.displayName, suggestOwnName)
+
+// Beim Öffnen eines neuen Spiels die „Du"-Zeile automatisch anbieten.
+onMounted(() => { if (canAddSelf.value) addSelfRow() })
+watch(() => auth.playerId, () => { if (canAddSelf.value) addSelfRow() })
 
 async function loadGame(id: string) {
   try {
@@ -274,6 +314,57 @@ async function saveGame() {
 }
 
 .new-game__player-input { padding-block: 0.65rem; }
+
+/* „Du"-Zeile: eigene Identität, Name nicht editierbar (nur im Profil änderbar). */
+.new-game__self {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed color-mix(in oklab, var(--player-accent) 45%, transparent);
+  background: color-mix(in oklab, var(--player-accent) 8%, transparent);
+}
+
+.new-game__self-name {
+  font-weight: 600;
+  font-size: var(--text-sm);
+  color: var(--text-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.new-game__self-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: color-mix(in oklab, var(--player-accent) 75%, var(--text-strong));
+  background: color-mix(in oklab, var(--player-accent) 18%, transparent);
+  padding: 0.1rem 0.5rem;
+  border-radius: var(--radius-pill);
+}
+
+.new-game__add-self {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  align-self: flex-start;
+  padding: 0.4rem 0.85rem;
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--card-border);
+  background: transparent;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  transition: color 150ms, border-color 150ms;
+}
+.new-game__add-self:hover { color: var(--primary); border-color: var(--primary); }
 
 .new-game__remove {
   width: 2.5rem;
