@@ -263,6 +263,7 @@
       "AddYou": "Dat ben ik",
       "Registered": "Geregistreerd",
       "SearchHint": "Tip: geregistreerde spelers worden voorgesteld terwijl je een naam typt.",
+      "IdTag": "Kenmerk om spelers te onderscheiden",
       "Errors": {
         "GameAndPlayerRequired": "Voer een spelnaam en minimaal één speler in.",
         "SaveFailed": "Fout bij het opslaan van het spel.",

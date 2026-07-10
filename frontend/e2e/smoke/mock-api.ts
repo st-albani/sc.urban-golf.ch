@@ -177,7 +177,11 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
   await page.route('**/api/players/search**', (route) => {
     const url = new URL(route.request().url())
     const q = (url.searchParams.get('q') || '').trim().toLowerCase()
-    const registered = [{ id: 'canon-registered-rita', name: 'Registrierte Rita', avatar: null }]
+    // Zwei gleichnamige „Rita" mit unterscheidbaren IDs → testet die Kennung.
+    const registered = [
+      { id: 'A1B2C3D4E5F6', name: 'Registrierte Rita', avatar: null },
+      { id: 'Z9Y8X7W6V5U4', name: 'Registrierte Rita', avatar: null },
+    ]
     const players = q.length >= 2 ? registered.filter((p) => p.name.toLowerCase().includes(q)) : []
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ players }) })
   })

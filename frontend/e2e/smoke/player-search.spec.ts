@@ -15,4 +15,15 @@ test.describe('Spielersuche (Smoke)', () => {
     await expect(registered.locator('.new-game__self-name')).toHaveText('Registrierte Rita')
     await expect(registered.locator('input')).toHaveCount(0)
   })
+
+  test('gleichnamige registrierte Spieler zeigen eine Kennung zur Unterscheidung', async ({ page, mockApi }) => {
+    void mockApi
+    await page.goto('/games/new')
+    await page.locator('.new-game__player-input').first().fill('Rita')
+
+    // Beide gleichnamigen Treffer bekommen eine kurze Kennung.
+    const codes = page.locator('.new-game__suggest-code')
+    await expect(codes).toHaveCount(2)
+    await expect(codes.first()).toHaveText('#A1B2')
+  })
 })

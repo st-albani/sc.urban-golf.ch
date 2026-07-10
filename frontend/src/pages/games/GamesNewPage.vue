@@ -78,6 +78,11 @@
                     >
                       <PlayerAvatar :name="r.name" :src="r.avatar" size="xs" color="var(--color-player-3)" />
                       <span class="new-game__suggest-name">{{ r.name }}</span>
+                      <span
+                        v-if="duplicateNames.has(r.name.trim().toLowerCase())"
+                        class="new-game__suggest-code"
+                        :title="$t('Games.NewGame.IdTag')"
+                      >#{{ shortId(r.id) }}</span>
                       <CheckBadgeIcon class="new-game__suggest-badge" :aria-label="$t('Games.NewGame.Registered')" />
                     </button>
                   </li>
@@ -236,6 +241,23 @@ function onNameInput(row: Row) {
       suggestions.value = []
     }
   }, 250)
+}
+
+// Gleichnamige Treffer im Ergebnis kennzeichnen, damit man den richtigen
+// registrierten Spieler wählt (Anzeigenamen sind nicht eindeutig).
+const duplicateNames = computed(() => {
+  const counts = new Map<string, number>()
+  for (const r of suggestions.value) {
+    const key = r.name.trim().toLowerCase()
+    counts.set(key, (counts.get(key) ?? 0) + 1)
+  }
+  return new Set([...counts].filter(([, n]) => n > 1).map(([k]) => k))
+})
+
+// Kurze, stabile, nicht-sensible Kennung aus der (bereits öffentlichen)
+// Spieler-ID — reicht, um zwei Gleichnamige auseinanderzuhalten.
+function shortId(id: string) {
+  return id.replace(/[^a-zA-Z0-9]/g, '').slice(0, 4).toUpperCase()
 }
 
 function selectRegistered(row: Row, r: RegisteredPlayer) {
@@ -508,7 +530,18 @@ async function saveGame() {
   transition: background 150ms;
 }
 .new-game__suggest-item:hover { background: color-mix(in oklab, var(--text-default) 7%, transparent); }
-.new-game__suggest-name { flex: 1 1 auto; text-align: left; font-weight: 600; font-size: var(--text-sm); }
+.new-game__suggest-name { flex: 1 1 auto; text-align: left; font-weight: 600; font-size: var(--text-sm); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.new-game__suggest-code {
+  flex-shrink: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--text-default) 8%, transparent);
+  padding: 0.05rem 0.35rem;
+  border-radius: var(--radius-sm);
+}
 .new-game__suggest-badge {
   width: 1.1rem;
   height: 1.1rem;
