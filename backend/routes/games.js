@@ -1,5 +1,6 @@
 import { query, queryOne, transaction } from '../db/pg.js';
 import { schemas, isValidId } from '@urban-golf/contract';
+import { getAccountFromRequest } from '../utils/auth.js';
 
 export default async function (fastify, _opts) {
   // Spiel erstellen oder aktualisieren
@@ -16,13 +17,21 @@ export default async function (fastify, _opts) {
     const validPlayers = players.filter(pid => isValidId(pid));
 
     try {
+      // Optionale Identität: ist der Request eingeloggt, wird der Ersteller
+      // serverseitig aus der Session abgeleitet (nie aus Client-Feldern).
+      // Anonym bleibt created_by NULL — der Flow bleibt unverändert.
+      const account = await getAccountFromRequest(req);
+      const createdBy = account?.id ?? null;
+
       const game = await transaction(async (client) => {
         const gameResult = await client.query(
-          `INSERT INTO games (id, name)
-           VALUES ($1, $2)
+          // created_by wird nur beim Anlegen gesetzt; beim Bearbeiten (ON CONFLICT)
+          // bleibt der ursprüngliche Ersteller unangetastet.
+          `INSERT INTO games (id, name, created_by)
+           VALUES ($1, $2, $3)
            ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
            RETURNING id, name`,
-          [id, name]
+          [id, name, createdBy]
         );
 
         if (validPlayers.length > 0) {
@@ -127,7 +136,11 @@ export default async function (fastify, _opts) {
     if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });
 
     const rows = await query(
-      `SELECT p.id, p.name
+      // registered/avatar: markiert kanonische (Konto-)Identitäten, damit die
+      // Bearbeiten-Ansicht sie read-only hält (kein versehentliches Umbenennen).
+      `SELECT p.id, p.name,
+              EXISTS (SELECT 1 FROM accounts a WHERE a.player_id = p.id) AS registered,
+              (SELECT a.avatar FROM accounts a WHERE a.player_id = p.id) AS avatar
        FROM players p
        JOIN game_players gp ON gp.player_id = p.id
        WHERE gp.game_id = $1`,

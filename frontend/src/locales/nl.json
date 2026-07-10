@@ -259,6 +259,10 @@
       "StartGame": "Spel starten",
       "AddPlayer": "Speler toevoegen",
       "RemovePlayer": "Speler verwijderen",
+      "You": "Jij",
+      "AddYou": "Dat ben ik",
+      "Registered": "Geregistreerd",
+      "SearchHint": "Tip: geregistreerde spelers worden voorgesteld terwijl je een naam typt.",
       "Errors": {
         "GameAndPlayerRequired": "Voer een spelnaam en minimaal één speler in.",
         "SaveFailed": "Fout bij het opslaan van het spel.",

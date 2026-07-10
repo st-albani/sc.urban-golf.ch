@@ -82,6 +82,8 @@ describe('Auth routes', () => {
         ['SET consumed_at', { rows: [] }],
         ['INSERT INTO accounts', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: null }] }],
         ['INSERT INTO sessions', { rows: [] }],
+        // ensureCanonicalPlayer legt beim Login die kanonische Identität an.
+        ['UPDATE accounts SET display_name', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'a', avatar: null, player_id: 'canon-new-1' }] }],
       ])
       const res = await app.inject({
         method: 'POST',
@@ -89,7 +91,8 @@ describe('Auth routes', () => {
         payload: { email: 'a@b.com', code },
       })
       expect(res.statusCode).toBe(200)
-      expect(res.json().account).toMatchObject({ id: 'acc1', email: 'a@b.com', displayName: null })
+      // Kanonische Identität wird beim Login etabliert (Default-Name aus E-Mail).
+      expect(res.json().account).toMatchObject({ id: 'acc1', email: 'a@b.com', displayName: 'a', playerId: 'canon-new-1' })
       expect(res.cookies.find((c) => c.name === SESSION_COOKIE)).toBeTruthy()
     })
 
@@ -126,9 +129,10 @@ describe('Auth routes', () => {
       expect(res.statusCode).toBe(401)
     })
 
-    it('returns the account for a valid session', async () => {
-      createMockClient([
-        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
+    it('backfills the canonical identity for a session that has none', async () => {
+      const client = createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna', player_id: null }] }],
+        ['UPDATE accounts SET display_name', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna', avatar: null, player_id: 'canon-me-1' }] }],
       ])
       const res = await app.inject({
         method: 'GET',
@@ -136,7 +140,24 @@ describe('Auth routes', () => {
         cookies: { [SESSION_COOKIE]: 'sometoken' },
       })
       expect(res.statusCode).toBe(200)
-      expect(res.json().account).toMatchObject({ id: 'acc1', email: 'a@b.com', displayName: 'Anna' })
+      expect(res.json().account).toMatchObject({ id: 'acc1', email: 'a@b.com', displayName: 'Anna', playerId: 'canon-me-1' })
+      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO players'), expect.any(Array))
+    })
+
+    it('returns the account as-is when it already has a canonical identity', async () => {
+      const client = createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna', player_id: 'canon-me-1' }] }],
+      ])
+      const res = await app.inject({
+        method: 'GET',
+        url: '/me',
+        cookies: { [SESSION_COOKIE]: 'sometoken' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().account).toMatchObject({ id: 'acc1', playerId: 'canon-me-1' })
+      // Kein Backfill nötig.
+      const insertPlayer = client.query.mock.calls.find((c) => c[0].includes('INSERT INTO players'))
+      expect(insertPlayer).toBeUndefined()
     })
   })
 
@@ -147,11 +168,10 @@ describe('Auth routes', () => {
       expect(res.statusCode).toBe(401)
     })
 
-    it('sets the display name and claims players with that name', async () => {
+    it('sets the display name and creates the canonical self player (no name claiming)', async () => {
       const client = createMockClient([
-        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: null }] }],
-        ['UPDATE accounts SET display_name', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
-        ['INSERT INTO account_players', { rows: [{ player_id: 'p1' }, { player_id: 'p2' }] }],
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: null, player_id: null }] }],
+        ['UPDATE accounts SET display_name', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna', avatar: null, player_id: 'canon-player-1' }] }],
       ])
       const res = await app.inject({
         method: 'POST',
@@ -160,11 +180,36 @@ describe('Auth routes', () => {
         cookies: { [SESSION_COOKIE]: 'tok' },
       })
       expect(res.statusCode).toBe(200)
+      // Kein claimedCount mehr, dafür die kanonische playerId.
       expect(res.json()).toEqual({
-        account: { id: 'acc1', email: 'a@b.com', displayName: 'Anna', avatar: null },
-        claimedCount: 2,
+        account: { id: 'acc1', email: 'a@b.com', displayName: 'Anna', avatar: null, playerId: 'canon-player-1' },
       })
-      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO account_players'), ['acc1', 'Anna'])
+      // Neue kanonische Spieler-Zeile wird angelegt …
+      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('INSERT INTO players'), expect.any(Array))
+      // … und account_players auf genau diese Zeile gesetzt (alte weggeräumt).
+      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM account_players'), ['acc1'])
+      // Kein namensbasiertes Claiming.
+      const nameClaim = client.query.mock.calls.find((c) => c[0].includes('WHERE p.name = $2'))
+      expect(nameClaim).toBeUndefined()
+    })
+
+    it('renames the existing canonical player instead of creating a new one', async () => {
+      const client = createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna', player_id: 'canon-player-1' }] }],
+        ['UPDATE accounts SET display_name', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna B.', avatar: null, player_id: 'canon-player-1' }] }],
+      ])
+      const res = await app.inject({
+        method: 'POST',
+        url: '/profile',
+        payload: { displayName: 'Anna B.' },
+        cookies: { [SESSION_COOKIE]: 'tok' },
+      })
+      expect(res.statusCode).toBe(200)
+      expect(res.json().account.playerId).toBe('canon-player-1')
+      // Umbenennen der bestehenden Zeile, kein neuer INSERT INTO players.
+      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('UPDATE players SET name'), ['canon-player-1', 'Anna B.'])
+      const insertPlayer = client.query.mock.calls.find((c) => c[0].includes('INSERT INTO players'))
+      expect(insertPlayer).toBeUndefined()
     })
   })
 
@@ -214,8 +259,8 @@ describe('Auth routes', () => {
       expect(res.statusCode).toBe(401)
     })
 
-    it('returns the games of claimed players', async () => {
-      createMockClient([
+    it('returns owned and participated games (created_by ∪ claimed players)', async () => {
+      const client = createMockClient([
         ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
         ['WITH my_games AS', { rows: [{ id: 'g1', name: 'Stadtpark', players: [], holes: [1, 2] }] }],
       ])
@@ -227,6 +272,10 @@ describe('Auth routes', () => {
       expect(res.statusCode).toBe(200)
       expect(res.json().games).toHaveLength(1)
       expect(res.json().games[0].name).toBe('Stadtpark')
+
+      // Der Ownership-Zweig (created_by) muss Teil der Abfrage sein.
+      const myGamesCall = client.query.mock.calls.find((c) => c[0].includes('WITH my_games AS'))
+      expect(myGamesCall[0]).toContain('created_by = $1')
     })
   })
 

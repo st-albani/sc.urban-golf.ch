@@ -24,6 +24,15 @@ export function generateSessionToken() {
   return crypto.randomBytes(32).toString('base64url');
 }
 
+/**
+ * Server-seitige Spieler-ID für die kanonische Selbst-Identität eines Kontos.
+ * 22 Zeichen base64url — passt in ID_PATTERN ([a-zA-Z0-9_-]{10,30}), damit sie
+ * clientseitig als Spieler-ID in POST /games mitgeschickt werden darf.
+ */
+export function generatePlayerId() {
+  return crypto.randomBytes(16).toString('base64url');
+}
+
 export function normalizeEmail(email) {
   return String(email).trim().toLowerCase();
 }
@@ -49,14 +58,14 @@ export async function getAccountFromRequest(request) {
   const token = request.cookies?.[SESSION_COOKIE];
   if (!token) return null;
   const row = await queryOne(
-    `SELECT a.id, a.email, a.display_name, a.avatar
+    `SELECT a.id, a.email, a.display_name, a.avatar, a.player_id
        FROM sessions s
        JOIN accounts a ON a.id = s.account_id
       WHERE s.token_hash = $1 AND s.expires_at > now()`,
     [hashToken(token)],
   );
   return row
-    ? { id: row.id, email: row.email, displayName: row.display_name, avatar: row.avatar ?? null }
+    ? { id: row.id, email: row.email, displayName: row.display_name, avatar: row.avatar ?? null, playerId: row.player_id ?? null }
     : null;
 }
 

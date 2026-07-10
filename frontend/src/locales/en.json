@@ -259,6 +259,10 @@
       "StartGame": "Start Game",
       "AddPlayer": "Add Player",
       "RemovePlayer": "Remove player",
+      "You": "You",
+      "AddYou": "This is me",
+      "Registered": "Registered",
+      "SearchHint": "Tip: registered players are suggested as you type a name.",
       "Errors": {
         "GameAndPlayerRequired": "Please enter a game name and at least one player.",
         "SaveFailed": "Failed to save the game.",

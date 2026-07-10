@@ -103,3 +103,38 @@ describe('GET /players', () => {
     expect(res.json()[0].name).toBe('Alice')
   })
 })
+
+describe('GET /players/search', () => {
+  let app
+
+  beforeEach(() => {
+    app = buildApp()
+    getClient.mockReset()
+  })
+
+  afterEach(() => app.close())
+
+  it('returns matching registered players', async () => {
+    const client = createMockClient(() => ({
+      rows: [{ id: 'canon-anna-01', name: 'Anna Meier', avatar: null }],
+    }))
+
+    const res = await app.inject({ method: 'GET', url: '/search?q=Anna' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().players).toHaveLength(1)
+    expect(res.json().players[0].name).toBe('Anna Meier')
+    // Nur registrierte (Konto-)Identitäten: die Query joint accounts.
+    const call = client.query.mock.calls.find((c) => c[0].includes('JOIN players p ON p.id = a.player_id'))
+    expect(call).toBeDefined()
+    expect(call[1]).toEqual(['%Anna%'])
+  })
+
+  it('returns empty for a too-short query without hitting the db', async () => {
+    const client = createMockClient(() => ({ rows: [] }))
+    const res = await app.inject({ method: 'GET', url: '/search?q=A' })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().players).toEqual([])
+    expect(client.query).not.toHaveBeenCalled()
+  })
+})

@@ -26,6 +26,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn = computed(() => account.value !== null)
   const displayName = computed(() => account.value?.displayName || null)
   const avatar = computed(() => account.value?.avatar || null)
+  const playerId = computed(() => account.value?.playerId || null)
 
   function openLogin() {
     loginOpen.value = true
@@ -57,11 +58,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  /** Anzeigename setzen und eigene Spieler-Einträge beanspruchen. */
-  async function setDisplayName(name: string): Promise<number> {
-    const { account: updated, claimedCount } = await apiSetProfile(name)
-    account.value = updated
-    return claimedCount
+  /** Anzeigename setzen. Etabliert die kanonische Selbst-Identität serverseitig. */
+  async function setDisplayName(name: string): Promise<void> {
+    account.value = await apiSetProfile(name)
   }
 
   async function deleteAccount(keepScores: boolean) {
@@ -78,7 +77,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   return {
-    account, loaded, loginOpen, isLoggedIn, displayName, avatar,
+    account, loaded, loginOpen, isLoggedIn, displayName, avatar, playerId,
     openLogin, closeLogin, loadMe, requestOtp, verifyOtp, logout,
     setDisplayName, deleteAccount, setAvatar,
   }

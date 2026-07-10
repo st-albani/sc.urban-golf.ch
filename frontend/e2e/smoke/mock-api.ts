@@ -88,6 +88,10 @@ function buildSummary(data: MockDataset) {
 export async function installMockApi(page: Page, seed?: MockDataset) {
   const state: MockDataset = seed ? structuredClone(seed) : defaultDataset()
 
+  // Spiele, die während der Session eingeloggt erstellt wurden (created_by).
+  // Fließen zusätzlich in „Meine Spiele" ein — spiegelt das Ownership-Modell.
+  const createdByMe: Array<{ id: string; name: string; created_at: string; players: unknown[]; holes: number[] }> = []
+
   await page.route('**/api/games/summary**', (route) => {
     route.fulfill({
       status: 200,
@@ -108,6 +112,10 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
       }
       state.games.push(game)
       state.gamePlayers[game.id] = payload.players
+      // Ist die Session eingeloggt, gilt der Ersteller (created_by) → „Meine Spiele".
+      if (authState.account) {
+        createdByMe.unshift({ id: game.id, name: game.name, created_at: game.created_at, players: [], holes: [] })
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -166,6 +174,14 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
     })
   })
 
+  await page.route('**/api/players/search**', (route) => {
+    const url = new URL(route.request().url())
+    const q = (url.searchParams.get('q') || '').trim().toLowerCase()
+    const registered = [{ id: 'canon-registered-rita', name: 'Registrierte Rita', avatar: null }]
+    const players = q.length >= 2 ? registered.filter((p) => p.name.toLowerCase().includes(q)) : []
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ players }) })
+  })
+
   await page.route('**/api/scores**', async (route) => {
     const req = route.request()
     if (req.method() === 'POST') {
@@ -190,7 +206,7 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
   // ---- Auth (optionale Identität) ----
   // Zustandsbehaftet, damit die "Session" auch einen Reload (page.goto) überlebt
   // — wie ein echtes Cookie.
-  const authState: { account: { id: string; email: string; displayName: string | null; avatar: string | null } | null } = { account: null }
+  const authState: { account: { id: string; email: string; displayName: string | null; avatar: string | null; playerId: string | null } | null } = { account: null }
 
   await page.route('**/api/auth/request-otp', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }),
@@ -198,7 +214,15 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
   await page.route('**/api/auth/verify-otp', (route) => {
     const payload = JSON.parse(route.request().postData() || '{}') as { email: string; code: string }
     if (payload.code === '123456') {
-      authState.account = { id: 'acc-mock-1', email: payload.email, displayName: null, avatar: null }
+      // Wie im Backend: der Login etabliert die kanonische Identität
+      // (Default-Anzeigename aus dem lokalen E-Mail-Teil).
+      authState.account = {
+        id: 'acc-mock-1',
+        email: payload.email,
+        displayName: payload.email.split('@')[0],
+        avatar: null,
+        playerId: 'canon-mock-self',
+      }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -219,11 +243,15 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
   })
   await page.route('**/api/auth/profile', (route) => {
     const p = JSON.parse(route.request().postData() || '{}') as { displayName: string }
-    if (authState.account) authState.account.displayName = p.displayName
+    // Etabliert die kanonische Selbst-Identität (playerId) — kein Claiming.
+    if (authState.account) {
+      authState.account.displayName = p.displayName
+      authState.account.playerId = authState.account.playerId ?? 'canon-player-mock'
+    }
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: p.displayName, avatar: null }, claimedCount: 2 }),
+      body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: p.displayName, avatar: null, playerId: 'canon-player-mock' } }),
     })
   })
   await page.route('**/api/auth/avatar', (route) => {
@@ -233,7 +261,7 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: null, avatar: value } }),
+      body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: null, avatar: value, playerId: null } }),
     })
   })
   await page.route('**/api/auth/stats', (route) =>
@@ -285,13 +313,17 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({
-        games: [{
-          id: 'mock-game-alpha-2026',
-          name: 'Stadtpark-Runde',
-          created_at: '2026-04-12T18:30:00Z',
-          players: [{ id: 'pl-anna-meier-001', name: 'Anna Meier', avg: 3.67, total: 11 }],
-          holes: [1, 2, 3],
-        }],
+        // Selbst erstellte Runden (Ownership) zuerst, dann die Fixture-Runde.
+        games: [
+          ...createdByMe,
+          {
+            id: 'mock-game-alpha-2026',
+            name: 'Stadtpark-Runde',
+            created_at: '2026-04-12T18:30:00Z',
+            players: [{ id: 'pl-anna-meier-001', name: 'Anna Meier', avg: 3.67, total: 11 }],
+            holes: [1, 2, 3],
+          },
+        ],
       }),
     }),
   )

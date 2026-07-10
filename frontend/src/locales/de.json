@@ -259,6 +259,10 @@
       "StartGame": "Spiel starten",
       "AddPlayer": "Spieler hinzufügen",
       "RemovePlayer": "Spieler entfernen",
+      "You": "Du",
+      "AddYou": "Das bin ich",
+      "Registered": "Registriert",
+      "SearchHint": "Tipp: Beim Tippen eines Namens werden registrierte Spieler vorgeschlagen.",
       "Errors": {
         "GameAndPlayerRequired": "Bitte Spielname und mindestens einen Spieler angeben.",
         "SaveFailed": "Fehler beim Speichern des Spiels.",

@@ -8,6 +8,19 @@ export interface Player {
   name: string
 }
 
+/** Spieler eines Spiels — kanonische (Konto-)Identitäten sind markiert. */
+export interface GamePlayer extends Player {
+  registered?: boolean
+  avatar?: string | null
+}
+
+/** Registrierter Spieler aus der Spielersuche (Konto mit kanonischer Identität). */
+export interface RegisteredPlayer {
+  id: string
+  name: string
+  avatar: string | null
+}
+
 export interface PlayerWithStats extends Player {
   avg: number | null
   total: number | null
@@ -65,9 +78,18 @@ export async function fetchGame(gameId: string): Promise<Game> {
   return data
 }
 
-export async function fetchGamePlayers(gameId: string): Promise<Player[]> {
-  const { data } = await axios.get<Player[]>(`${API_ROUTES.GAMES}/${gameId}/players`)
+export async function fetchGamePlayers(gameId: string): Promise<GamePlayer[]> {
+  const { data } = await axios.get<GamePlayer[]>(`${API_ROUTES.GAMES}/${gameId}/players`)
   return data
+}
+
+/** Registrierte Spieler nach Name suchen (für die Spielersuche beim Erstellen). */
+export async function searchPlayers(q: string): Promise<RegisteredPlayer[]> {
+  const { data } = await axios.get<{ players: RegisteredPlayer[] }>(
+    `${API_ROUTES.PLAYERS}/search`,
+    { params: { q } },
+  )
+  return data.players
 }
 
 export async function createOrUpdateGame(payload: {
@@ -128,6 +150,9 @@ export interface Account {
   email: string
   displayName: string | null
   avatar: string | null
+  // Kanonische Selbst-Identität: stabile Spieler-ID des Kontos (für die
+  // „Das bin ich"-Zeile beim Erstellen eines Spiels wiederverwendet).
+  playerId: string | null
 }
 
 export async function requestOtp(email: string): Promise<void> {
@@ -153,12 +178,12 @@ export async function logout(): Promise<void> {
   await axios.post(`${API_ROUTES.AUTH}/logout`)
 }
 
-export async function setProfile(displayName: string): Promise<{ account: Account; claimedCount: number }> {
-  const { data } = await axios.post<{ account: Account; claimedCount: number }>(
+export async function setProfile(displayName: string): Promise<Account> {
+  const { data } = await axios.post<{ account: Account }>(
     `${API_ROUTES.AUTH}/profile`,
     { displayName },
   )
-  return data
+  return data.account
 }
 
 export async function fetchMyGames(): Promise<GameSummary[]> {
