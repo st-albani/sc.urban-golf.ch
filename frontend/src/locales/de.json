@@ -119,6 +119,14 @@
       }
     }
   },
+  "Share": {
+    "Title": "Spiel teilen",
+    "EditWarning": "Jeder mit diesem Link kann Scores eintragen.",
+    "LinkLabel": "Spiel-Link",
+    "Copy": "Link kopieren",
+    "Copied": "Kopiert!",
+    "Share": "Teilen"
+  },
   "Feedback": {
     "Title": "Feedback zur Scorecard",
     "Subtitle": "Was können wir besser machen? Jedes Feedback hilft.",

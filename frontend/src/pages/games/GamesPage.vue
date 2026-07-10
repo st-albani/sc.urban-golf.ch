@@ -15,14 +15,24 @@
               <h1 class="t-title games-detail__title" :title="gameName">
                 {{ displayName }}
               </h1>
-              <AppIconButton
-                :label="$t('Games.HoleView.EditGame')"
-                variant="outline"
-                size="md"
-                @click="$router.push(`/games/new/${gameId}`)"
-              >
-                <PencilSquareIcon class="w-5 h-5" />
-              </AppIconButton>
+              <div class="games-detail__title-actions">
+                <AppIconButton
+                  :label="$t('Share.Title')"
+                  variant="outline"
+                  size="md"
+                  @click="shareOpen = true"
+                >
+                  <ShareIcon class="w-5 h-5" />
+                </AppIconButton>
+                <AppIconButton
+                  :label="$t('Games.HoleView.EditGame')"
+                  variant="outline"
+                  size="md"
+                  @click="$router.push(`/games/new/${gameId}`)"
+                >
+                  <PencilSquareIcon class="w-5 h-5" />
+                </AppIconButton>
+              </div>
             </div>
 
             <!-- Direkter Loch-Zugriff: Chip-Leiste zum Springen in die Hole-View. -->
@@ -53,6 +63,8 @@
 
           <ScoreCard />
         </template>
+
+        <ShareGameSheet v-model="shareOpen" :game-id="gameId" :game-name="gameName" />
       </div>
     </template>
   </DefaultLayout>
@@ -63,11 +75,12 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import GamesListCompact from '@/components/games/GamesListCompact.vue'
 import ScoreCard from '@/components/games/ScoreCard.vue'
 import GamesHoleView from '@/components/games/GamesHoleView.vue'
+import ShareGameSheet from '@/components/games/ShareGameSheet.vue'
 import ErrorState from '@/components/ui/ErrorState.vue'
 import AppIconButton from '@/components/ui/AppIconButton.vue'
 
-import { PencilSquareIcon, PlusIcon, CheckIcon } from '@heroicons/vue/24/outline'
-import { computed, provide, watchEffect } from 'vue'
+import { PencilSquareIcon, PlusIcon, CheckIcon, ShareIcon } from '@heroicons/vue/24/outline'
+import { computed, provide, ref, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 
@@ -79,6 +92,7 @@ import { VALIDATION } from '@/constants'
 
 const route = useRoute()
 const { t } = useI18n()
+const shareOpen = ref(false)
 const gameId = computed(() => route.params.gameId as string)
 const hasValidGameId = computed(() =>
   typeof gameId.value === 'string' && /^[a-zA-Z0-9_-]{10,30}$/.test(gameId.value)
@@ -140,6 +154,13 @@ watchEffect(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.games-detail__title-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
 }
 
 /* Hole-Pill-Leiste: direkter Zugriff auf Löcher von allen drei Scorecard-Views */

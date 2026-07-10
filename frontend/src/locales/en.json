@@ -119,6 +119,14 @@
       }
     }
   },
+  "Share": {
+    "Title": "Share game",
+    "EditWarning": "Anyone with this link can enter scores.",
+    "LinkLabel": "Game link",
+    "Copy": "Copy link",
+    "Copied": "Copied!",
+    "Share": "Share"
+  },
   "Feedback": {
     "Title": "Feedback on the Scorecard",
     "Subtitle": "How can we improve? Every piece of feedback helps.",

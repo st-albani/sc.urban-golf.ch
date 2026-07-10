@@ -119,6 +119,14 @@
       }
     }
   },
+  "Share": {
+    "Title": "Spel delen",
+    "EditWarning": "Iedereen met deze link kan scores invoeren.",
+    "LinkLabel": "Spellink",
+    "Copy": "Link kopiëren",
+    "Copied": "Gekopieerd!",
+    "Share": "Delen"
+  },
   "Feedback": {
     "Title": "Feedback over de scorecard",
     "Subtitle": "Wat kunnen we beter doen? Alle feedback helpt.",

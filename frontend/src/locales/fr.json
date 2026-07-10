@@ -119,6 +119,14 @@
       }
     }
   },
+  "Share": {
+    "Title": "Partager la partie",
+    "EditWarning": "Toute personne disposant de ce lien peut saisir des scores.",
+    "LinkLabel": "Lien de la partie",
+    "Copy": "Copier le lien",
+    "Copied": "Copié !",
+    "Share": "Partager"
+  },
   "Feedback": {
     "Title": "Retour sur la scorecard",
     "Subtitle": "Comment pouvons-nous faire mieux ? Chaque retour aide.",
