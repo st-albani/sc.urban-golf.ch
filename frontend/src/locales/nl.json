@@ -183,12 +183,20 @@
       "KeypadShowAll": "Alles tonen",
       "KeypadShortcutHint": "Tip: 1–7 op het toetsenbord",
       "StepperBack": "Vorige hole ({n})",
-      "StepperForward": "Volgende hole ({n})"
+      "StepperForward": "Volgende hole ({n})",
+      "MissingScore": "ontbreekt",
+      "PillComplete": "Hole {n}, voor iedereen ingevoerd",
+      "PillPartial": "Hole {n}, gedeeltelijk ingevoerd"
     }
   },
   "Network": {
     "Offline": "Je bent offline. Scores worden lokaal opgeslagen.",
     "BackOnline": "Weer online. Scores worden gesynchroniseerd..."
+  },
+  "Sync": {
+    "Offline": "Offline",
+    "OfflinePending": "Offline · {n} in wachtrij",
+    "Syncing": "{n} synchroniseren …"
   },
   "Errors": {
     "RequestFailed": "Verzoek mislukt",

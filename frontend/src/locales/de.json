@@ -183,12 +183,20 @@
       "KeypadShowAll": "Alle anzeigen",
       "KeypadShortcutHint": "Tipp: 1–7 auf der Tastatur",
       "StepperBack": "Zum vorherigen Loch ({n})",
-      "StepperForward": "Zum nächsten Loch ({n})"
+      "StepperForward": "Zum nächsten Loch ({n})",
+      "MissingScore": "fehlt",
+      "PillComplete": "Loch {n}, für alle erfasst",
+      "PillPartial": "Loch {n}, teilweise erfasst"
     }
   },
   "Network": {
     "Offline": "Du bist offline. Scores werden lokal gespeichert.",
     "BackOnline": "Wieder online. Scores werden synchronisiert."
+  },
+  "Sync": {
+    "Offline": "Offline",
+    "OfflinePending": "Offline · {n} ausstehend",
+    "Syncing": "Synchronisiere {n} …"
   },
   "Errors": {
     "RequestFailed": "Anfrage fehlgeschlagen",

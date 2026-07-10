@@ -53,21 +53,29 @@
       </div>
     </header>
 
-    <!-- Fortschritt: Loch-Pills — aktives Loch wird automatisch zentriert -->
-    <div ref="pillsRef" class="hole-progress scroll-hide" role="list">
-      <router-link
-        v-for="n in holes"
-        :key="n"
-        :ref="el => setPillRef(n, el as unknown as { $el?: HTMLElement } | HTMLElement | null)"
-        :to="`/games/${gameId}/${n}`"
-        :class="['hole-progress__chip', {
-          'is-current': n === hole,
-          'is-filled': isFilled(n),
-        }]"
-        role="listitem"
-      >
-        {{ n }}
-      </router-link>
+    <!-- Fortschritt: Loch-Pills. Der Add-Button liegt bewusst ausserhalb des
+         scrollenden Containers, damit er bei vielen Löchern nicht am rechten
+         Rand abgeschnitten wird. -->
+    <div class="hole-progress-row">
+      <div ref="pillsRef" class="hole-progress scroll-hide" role="list">
+        <router-link
+          v-for="n in holes"
+          :key="n"
+          :ref="el => setPillRef(n, el as unknown as { $el?: HTMLElement } | HTMLElement | null)"
+          :to="`/games/${gameId}/${n}`"
+          :class="['hole-progress__chip', {
+            'is-current': n === hole,
+            'is-partial': holeStateFor(n) === 'partial',
+            'is-complete': holeStateFor(n) === 'complete',
+          }]"
+          :aria-label="pillAriaLabel(n)"
+          role="listitem"
+        >
+          {{ n }}
+          <CheckIcon v-if="holeStateFor(n) === 'complete'" class="hole-progress__check" aria-hidden="true" />
+        </router-link>
+      </div>
+
       <router-link
         :to="`/games/${gameId}/${nextNewHole}`"
         class="hole-progress__chip hole-progress__chip--add"
@@ -87,6 +95,7 @@
         v-for="player in players"
         :key="player.id"
         class="player-tile"
+        :class="{ 'player-tile--missing': !hasCurrentScore(player.id) }"
         :style="{ '--player-accent': colorMap[player.id]?.color }"
       >
         <div class="player-tile__identity">
@@ -115,10 +124,10 @@
             class="stroke-value"
             :class="{ 'is-saving': savingMap[player.id] }"
             @click="openKeypad(player.id)"
-            :aria-label="$t('Games.HoleView.ScoreFor', { player: player.name }) + ': ' + (scores[player.id]?.[hole] ?? '–')"
+            :aria-label="$t('Games.HoleView.ScoreFor', { player: player.name }) + ': ' + (hasCurrentScore(player.id) ? scores[player.id]?.[hole] : $t('Games.HoleView.MissingScore'))"
             :aria-busy="savingMap[player.id] || undefined"
           >
-            {{ scores[player.id]?.[hole] ?? '–' }}
+            {{ hasCurrentScore(player.id) ? scores[player.id]?.[hole] : '–' }}
           </button>
 
           <button
@@ -182,9 +191,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount, watch, inject } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useScoreSyncStore } from '@/stores/scoreSync'
 import { usePlayerColors } from '@/composables/usePlayerColors'
+import { useHoleCompletion } from '@/composables/useHoleCompletion'
 import { gamesDetailKey } from '@/types'
 import { shortGameName } from '@/utils/format'
 import { VALIDATION } from '@/constants'
@@ -194,11 +205,12 @@ import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
 import {
   MinusIcon, PlusIcon,
   ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon,
-  PencilSquareIcon,
+  PencilSquareIcon, CheckIcon,
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
 const router = useRouter()
+const { t } = useI18n()
 const gameId = computed(() => route.params.gameId as string)
 const hole = computed(() => parseInt(route.params.holeId as string))
 
@@ -206,8 +218,26 @@ const context = inject(gamesDetailKey)!
 const { players, scores, holes, gameName } = context
 const { saveScore: saveScoreOffline } = useScoreSyncStore()
 const { colorMap } = usePlayerColors(players)
+const { hasScore, holeState } = useHoleCompletion(players, scores)
 
 const displayName = computed(() => shortGameName(gameName.value))
+
+function hasCurrentScore(playerId: string) {
+  return hasScore(playerId, hole.value)
+}
+
+/** Pill-Zustand eines Lochs für die Fortschrittsleiste. */
+function holeStateFor(holeNum: number) {
+  return holeState(holeNum)
+}
+
+/** Beschreibt den Pill-Zustand für Screenreader (nicht nur farblich). */
+function pillAriaLabel(holeNum: number) {
+  const state = holeState(holeNum)
+  if (state === 'complete') return t('Games.HoleView.PillComplete', { n: holeNum })
+  if (state === 'partial') return t('Games.HoleView.PillPartial', { n: holeNum })
+  return `${t('General.Hole')} ${holeNum}`
+}
 
 const strokeRange = computed(() => {
   const { STROKES_MIN: min, STROKES_MAX: max } = VALIDATION
@@ -223,13 +253,6 @@ const nextNewHole = computed(() => {
   const max = holes.value.length ? Math.max(...holes.value) : 0
   return Math.min(VALIDATION.HOLE_MAX, max + 1)
 })
-
-function isFilled(holeNum: number) {
-  return players.value.some(p => {
-    const v = scores.value[p.id]?.[holeNum]
-    return v !== undefined && v !== '' && v !== null
-  })
-}
 
 // Score element refs for pulse animation
 const scoreRefs: Record<string, HTMLElement | null> = {}
@@ -506,8 +529,18 @@ function ensureScoreFieldsExist() {
   font-variant-numeric: tabular-nums;
 }
 
-/* Progress pills */
+/* Loch-Pills + Add-Button teilen sich eine Reihe */
+.hole-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Progress pills — wachsen nicht (bleiben links, "+1" direkt daneben),
+   schrumpfen aber und scrollen, wenn viele Löcher nicht mehr passen. */
 .hole-progress {
+  flex: 0 1 auto;
+  min-width: 0;
   display: flex;
   gap: 0.4rem;
   overflow-x: auto;
@@ -536,10 +569,31 @@ function ensureScoreFieldsExist() {
 
 .hole-progress__chip:active { transform: scale(0.94); }
 
-.hole-progress__chip.is-filled {
+/* Teilweise erfasst: mindestens ein, aber nicht alle Spieler. */
+.hole-progress__chip.is-partial {
   color: var(--primary);
-  background: color-mix(in oklab, var(--primary) 14%, var(--card-bg));
-  border-color: color-mix(in oklab, var(--primary) 25%, var(--card-border));
+  background: color-mix(in oklab, var(--primary) 12%, var(--card-bg));
+  border-color: color-mix(in oklab, var(--primary) 22%, var(--card-border));
+}
+
+/* Vollständig für alle Spieler: Success-Tint + Häkchen (nicht nur farblich). */
+.hole-progress__chip.is-complete {
+  color: color-mix(in oklab, var(--color-success-600) 85%, var(--text-strong));
+  background: color-mix(in oklab, var(--color-success-500) 16%, var(--card-bg));
+  border-color: color-mix(in oklab, var(--color-success-500) 32%, var(--card-border));
+  padding-inline: 0.55rem 0.5rem;
+}
+
+:root.dark .hole-progress__chip.is-complete {
+  color: var(--color-success-400);
+}
+
+.hole-progress__check {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-left: 0.15rem;
+  flex-shrink: 0;
+  stroke-width: 2.5;
 }
 
 .hole-progress__chip.is-current {
@@ -577,6 +631,7 @@ function ensureScoreFieldsExist() {
   box-shadow: var(--shadow-elev-1);
   position: relative;
   overflow: hidden;
+  transition: background 240ms var(--ease-standard);
 }
 
 .player-tile::before {
@@ -589,12 +644,28 @@ function ensureScoreFieldsExist() {
   background: var(--player-accent);
   border-radius: 0 3px 3px 0;
   box-shadow: 3px 0 10px -4px color-mix(in oklab, var(--player-accent) 25%, transparent);
+  transition: opacity 240ms var(--ease-standard);
 }
 
 :root.dark .player-tile::before {
   /* Im Dark-Mode ist die Akzent-Chroma ohnehin höher — Glow noch einen Tick
      subtiler, damit es nicht "leuchtet". */
   box-shadow: 3px 0 8px -5px color-mix(in oklab, var(--player-accent) 20%, transparent);
+}
+
+/* Loch noch nicht für diesen Spieler erfasst: ruhige, "wartende" Kachel.
+   Der farbige Akzentbalken leuchtet erst beim Erfassen voll auf und der
+   "–"-Wert ist gedämpft — kein Badge, damit der Name nie verdeckt wird. */
+.player-tile--missing {
+  background: color-mix(in oklab, var(--text-default) 4%, var(--card-bg));
+}
+
+.player-tile--missing::before {
+  opacity: 0.4;
+}
+
+.player-tile--missing .stroke-value {
+  color: var(--text-muted);
 }
 
 .player-tile__identity {
