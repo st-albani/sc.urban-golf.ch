@@ -72,6 +72,42 @@
         </template>
 
         <p v-else class="account__hint">{{ $t('Stats.Empty') }}</p>
+
+        <section v-if="!loading && summary" class="account__data card card--padded">
+          <h2 class="t-eyebrow">{{ $t('Account.DataTitle') }}</h2>
+          <dl class="account__data-list">
+            <div class="account__data-row">
+              <dt>{{ $t('Account.Email') }}</dt>
+              <dd>{{ summary.email }}</dd>
+            </div>
+            <div class="account__data-row">
+              <dt>{{ $t('Account.Names') }}</dt>
+              <dd>{{ summary.playerNames.join(', ') || '–' }}</dd>
+            </div>
+            <div class="account__data-row">
+              <dt>{{ $t('Account.Rounds') }}</dt>
+              <dd>{{ summary.rounds }}</dd>
+            </div>
+          </dl>
+
+          <div v-if="!confirmDelete">
+            <AppButton variant="ghost" size="md" pill @click="confirmDelete = true">
+              {{ $t('Account.Delete') }}
+            </AppButton>
+          </div>
+          <div v-else class="account__delete">
+            <p class="account__delete-q">{{ $t('Account.DeleteConfirm') }}</p>
+            <AppButton variant="secondary" size="md" block pill :loading="deleting" @click="doDelete(true)">
+              {{ $t('Account.DeleteKeep') }}
+            </AppButton>
+            <AppButton variant="danger" size="md" block pill :loading="deleting" @click="doDelete(false)">
+              {{ $t('Account.DeleteRemove') }}
+            </AppButton>
+            <AppButton variant="ghost" size="sm" block pill :disabled="deleting" @click="confirmDelete = false">
+              {{ $t('Account.DeleteCancel') }}
+            </AppButton>
+          </div>
+        </section>
       </template>
     </div>
   </DefaultLayout>
@@ -79,20 +115,29 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AppButton from '@/components/ui/AppButton.vue'
 import { useAuthStore } from '@/stores/auth'
+import { useToast } from '@/composables/useToast'
 import {
-  fetchStats, fetchOpponents, fetchHeadToHead,
-  type Stats, type Opponent, type HeadToHead,
+  fetchStats, fetchOpponents, fetchHeadToHead, fetchAccountSummary,
+  type Stats, type Opponent, type HeadToHead, type AccountSummary,
 } from '@/services/api'
 
 const auth = useAuthStore()
+const router = useRouter()
+const { t } = useI18n()
+const { success } = useToast()
 const stats = ref<Stats | null>(null)
 const loading = ref(false)
 const opponents = ref<Opponent[]>([])
 const selectedOpponent = ref('')
 const h2h = ref<HeadToHead | null>(null)
+const summary = ref<AccountSummary | null>(null)
+const confirmDelete = ref(false)
+const deleting = ref(false)
 
 function fmt(n: number | null): string {
   return n === null ? '–' : n.toFixed(2)
@@ -107,8 +152,21 @@ async function load() {
   try {
     stats.value = await fetchStats()
     opponents.value = await fetchOpponents()
+    summary.value = await fetchAccountSummary()
   } finally {
     loading.value = false
+  }
+}
+
+async function doDelete(keepScores: boolean) {
+  if (deleting.value) return
+  deleting.value = true
+  try {
+    await auth.deleteAccount(keepScores)
+    success(t('Account.Deleted'))
+    router.push('/')
+  } finally {
+    deleting.value = false
   }
 }
 
@@ -257,5 +315,50 @@ watch(() => auth.isLoggedIn, load)
 
 .h2h__meta {
   font-size: var(--text-sm);
+}
+
+.account__data {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.account__data-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.account__data-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: var(--text-sm);
+}
+
+.account__data-row dt {
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.account__data-row dd {
+  margin: 0;
+  color: var(--text-strong);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.account__delete {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.account__delete-q {
+  font-size: var(--text-sm);
+  color: var(--text-default);
+  font-weight: 600;
 }
 </style>

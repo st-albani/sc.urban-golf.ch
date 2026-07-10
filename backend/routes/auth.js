@@ -1,5 +1,5 @@
 import { schemas } from '@urban-golf/contract';
-import { query, queryOne } from '../db/pg.js';
+import { query, queryOne, transaction } from '../db/pg.js';
 import { sendMail, isMailConfigured } from '../utils/mailer.js';
 import {
   SESSION_COOKIE,
@@ -327,6 +327,63 @@ export default async function (fastify, _opts) {
         myAvg: myHoles > 0 ? round2(myStrokes / myHoles) : null,
         opponentAvg: oppHoles > 0 ? round2(oppStrokes / oppHoles) : null,
       });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Konto-Transparenz: welche Daten sind mit dem Account verknüpft?
+  fastify.get('/account-summary', { preHandler: requireAuth }, async (request, reply) => {
+    try {
+      const names = await query(
+        `SELECT DISTINCT p.name
+         FROM account_players ap JOIN players p ON p.id = ap.player_id
+         WHERE ap.account_id = $1
+         ORDER BY p.name`,
+        [request.account.id],
+      );
+      const roundsRow = await queryOne(
+        `SELECT COUNT(DISTINCT gp.game_id)::int AS rounds
+         FROM game_players gp
+         JOIN account_players ap ON ap.player_id = gp.player_id
+         WHERE ap.account_id = $1`,
+        [request.account.id],
+      );
+      return reply.send({
+        email: request.account.email,
+        displayName: request.account.displayName,
+        playerNames: names.map((r) => r.name),
+        rounds: roundsRow ? roundsRow.rounds : 0,
+      });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Konto löschen. keepScores=false entfernt zusätzlich die zugeordneten
+  // Spieler-Einträge (inkl. deren Scores, via ON DELETE CASCADE); keepScores
+  // (Default true) lässt anonymisierte Score-Daten für Mitspieler intakt.
+  fastify.delete('/account', { preHandler: requireAuth }, async (request, reply) => {
+    const keepScores = String(request.query.keepScores ?? 'true') !== 'false';
+    try {
+      await transaction(async (client) => {
+        if (!keepScores) {
+          await client.query(
+            `DELETE FROM players WHERE id IN (
+               SELECT player_id FROM account_players WHERE account_id = $1
+             )`,
+            [request.account.id],
+          );
+        }
+        // OTP-Codes hängen an der E-Mail (kein FK) — separat entfernen.
+        await client.query(`DELETE FROM otp_codes WHERE email = $1`, [request.account.email]);
+        // Account löschen — sessions & account_players kaskadieren.
+        await client.query(`DELETE FROM accounts WHERE id = $1`, [request.account.id]);
+      });
+      reply.clearCookie(SESSION_COOKIE, { path: '/' });
+      return reply.send({ ok: true });
     } catch (err) {
       request.log.error(err);
       return reply.code(500).send({ error: 'Database error' });

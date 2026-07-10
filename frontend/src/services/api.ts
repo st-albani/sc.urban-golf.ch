@@ -211,3 +211,19 @@ export async function fetchHeadToHead(name: string): Promise<HeadToHead> {
   const { data } = await axios.get<HeadToHead>(`${API_ROUTES.AUTH}/head-to-head`, { params: { name } })
   return data
 }
+
+export interface AccountSummary {
+  email: string
+  displayName: string | null
+  playerNames: string[]
+  rounds: number
+}
+
+export async function fetchAccountSummary(): Promise<AccountSummary> {
+  const { data } = await axios.get<AccountSummary>(`${API_ROUTES.AUTH}/account-summary`)
+  return data
+}
+
+export async function deleteAccount(keepScores: boolean): Promise<void> {
+  await axios.delete(`${API_ROUTES.AUTH}/account`, { params: { keepScores } })
+}

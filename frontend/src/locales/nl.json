@@ -119,6 +119,18 @@
       }
     }
   },
+  "Account": {
+    "DataTitle": "Account & gegevens",
+    "Email": "E-mail",
+    "Names": "Gekoppelde namen",
+    "Rounds": "Rondes",
+    "Delete": "Account verwijderen",
+    "DeleteConfirm": "Account echt verwijderen? Dit kan niet ongedaan worden gemaakt.",
+    "DeleteKeep": "Scores geanonimiseerd behouden",
+    "DeleteRemove": "Mijn scoregegevens verwijderen",
+    "DeleteCancel": "Annuleren",
+    "Deleted": "Account verwijderd."
+  },
   "Auth": {
     "Title": "Inloggen",
     "Account": "Account",

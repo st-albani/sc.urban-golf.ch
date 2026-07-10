@@ -38,8 +38,8 @@ test.describe('Identität ↔ Spieler & Meine Spiele (Smoke)', () => {
     void mockApi
     await signIn(page)
     await page.goto('/account')
-    await expect(page.getByText('Runden', { exact: true })).toBeVisible()
-    await expect(page.getByText('Sieg-Quote')).toBeVisible()
+    await expect(page.locator('.account__stats').getByText('Sieg-Quote')).toBeVisible()
+    await expect(page.locator('.stat-tile__value').first()).toBeVisible()
     await expect(page.locator('.trend__line')).toBeVisible()
   })
 
@@ -49,5 +49,18 @@ test.describe('Identität ↔ Spieler & Meine Spiele (Smoke)', () => {
     await page.goto('/account')
     await page.locator('.account__h2h-select').selectOption('Boris Wild')
     await expect(page.locator('.h2h__record')).toHaveText('3 : 2')
+  })
+
+  test('Konto-Daten anzeigen und Konto löschen (anonymisiert behalten)', async ({ page, mockApi }) => {
+    void mockApi
+    await signIn(page)
+    await page.goto('/account')
+    // Verknüpfte Daten sichtbar
+    await expect(page.getByText('Zugeordnete Namen')).toBeVisible()
+    // Löschen → Bestätigung → anonymisiert behalten
+    await page.getByRole('button', { name: 'Konto löschen' }).click()
+    await page.getByRole('button', { name: 'Score-Daten anonymisiert behalten' }).click()
+    // Zurück zur Startseite, ausgeloggt
+    await expect(page).toHaveURL(/\/$/)
   })
 })

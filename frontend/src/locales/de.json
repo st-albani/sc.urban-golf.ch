@@ -119,6 +119,18 @@
       }
     }
   },
+  "Account": {
+    "DataTitle": "Konto & Daten",
+    "Email": "E-Mail",
+    "Names": "Zugeordnete Namen",
+    "Rounds": "Runden",
+    "Delete": "Konto löschen",
+    "DeleteConfirm": "Konto wirklich löschen? Das lässt sich nicht rückgängig machen.",
+    "DeleteKeep": "Score-Daten anonymisiert behalten",
+    "DeleteRemove": "Meine Score-Daten entfernen",
+    "DeleteCancel": "Abbrechen",
+    "Deleted": "Konto gelöscht."
+  },
   "Auth": {
     "Title": "Anmelden",
     "Account": "Konto",

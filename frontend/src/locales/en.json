@@ -119,6 +119,18 @@
       }
     }
   },
+  "Account": {
+    "DataTitle": "Account & data",
+    "Email": "E-mail",
+    "Names": "Linked names",
+    "Rounds": "Rounds",
+    "Delete": "Delete account",
+    "DeleteConfirm": "Really delete your account? This can't be undone.",
+    "DeleteKeep": "Keep scores anonymised",
+    "DeleteRemove": "Remove my score data",
+    "DeleteCancel": "Cancel",
+    "Deleted": "Account deleted."
+  },
   "Auth": {
     "Title": "Sign in",
     "Account": "Account",

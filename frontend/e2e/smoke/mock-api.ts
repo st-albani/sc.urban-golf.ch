@@ -245,6 +245,20 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
       }),
     }),
   )
+  await page.route('**/api/auth/account-summary', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ email: 'spieler@example.com', displayName: 'Anna Meier', playerNames: ['Anna Meier'], rounds: 3 }),
+    }),
+  )
+  await page.route(/\/api\/auth\/account(\?|$)/, (route) => {
+    if (route.request().method() === 'DELETE') {
+      authState.account = null
+      return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+    }
+    return route.fallback()
+  })
   await page.route('**/api/auth/opponents', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ opponents: [{ name: 'Boris Wild', rounds: 3 }] }) }),
   )

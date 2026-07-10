@@ -119,6 +119,18 @@
       }
     }
   },
+  "Account": {
+    "DataTitle": "Compte & données",
+    "Email": "E-mail",
+    "Names": "Noms associés",
+    "Rounds": "Parties",
+    "Delete": "Supprimer le compte",
+    "DeleteConfirm": "Supprimer vraiment ton compte ? Action irréversible.",
+    "DeleteKeep": "Conserver les scores anonymisés",
+    "DeleteRemove": "Supprimer mes données de score",
+    "DeleteCancel": "Annuler",
+    "Deleted": "Compte supprimé."
+  },
   "Auth": {
     "Title": "Se connecter",
     "Account": "Compte",

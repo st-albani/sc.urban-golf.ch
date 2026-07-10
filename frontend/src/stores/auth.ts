@@ -6,6 +6,7 @@ import {
   fetchMe,
   logout as apiLogout,
   setProfile as apiSetProfile,
+  deleteAccount as apiDeleteAccount,
   type Account,
 } from '@/services/api'
 
@@ -61,8 +62,16 @@ export const useAuthStore = defineStore('auth', () => {
     return claimedCount
   }
 
+  async function deleteAccount(keepScores: boolean) {
+    try {
+      await apiDeleteAccount(keepScores)
+    } finally {
+      account.value = null
+    }
+  }
+
   return {
     account, loaded, loginOpen, isLoggedIn, displayName,
-    openLogin, closeLogin, loadMe, requestOtp, verifyOtp, logout, setDisplayName,
+    openLogin, closeLogin, loadMe, requestOtp, verifyOtp, logout, setDisplayName, deleteAccount,
   }
 })

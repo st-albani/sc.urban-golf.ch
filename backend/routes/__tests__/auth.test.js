@@ -272,6 +272,55 @@ describe('Auth routes', () => {
     })
   })
 
+  describe('GET /account-summary', () => {
+    it('requires a session', async () => {
+      createMockClient()
+      const res = await app.inject({ method: 'GET', url: '/account-summary' })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('returns the linked data', async () => {
+      createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
+        ['FROM account_players ap JOIN players', { rows: [{ name: 'Anna' }, { name: 'Anna M.' }] }],
+        ['COUNT(DISTINCT gp.game_id)', { rows: [{ rounds: 7 }] }],
+      ])
+      const res = await app.inject({ method: 'GET', url: '/account-summary', cookies: { [SESSION_COOKIE]: 'tok' } })
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({
+        email: 'a@b.com', displayName: 'Anna', playerNames: ['Anna', 'Anna M.'], rounds: 7,
+      })
+    })
+  })
+
+  describe('DELETE /account', () => {
+    it('requires a session', async () => {
+      createMockClient()
+      const res = await app.inject({ method: 'DELETE', url: '/account' })
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('keeps scores by default (deletes account only)', async () => {
+      const client = createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
+      ])
+      const res = await app.inject({ method: 'DELETE', url: '/account', cookies: { [SESSION_COOKIE]: 'tok' } })
+      expect(res.statusCode).toBe(200)
+      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM accounts'), ['acc1'])
+      expect(client.query).not.toHaveBeenCalledWith(expect.stringContaining('DELETE FROM players'), expect.anything())
+    })
+
+    it('removes claimed players when keepScores=false', async () => {
+      const client = createMockClient([
+        ['FROM sessions s', { rows: [{ id: 'acc1', email: 'a@b.com', display_name: 'Anna' }] }],
+      ])
+      const res = await app.inject({ method: 'DELETE', url: '/account?keepScores=false', cookies: { [SESSION_COOKIE]: 'tok' } })
+      expect(res.statusCode).toBe(200)
+      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM players'), ['acc1'])
+      expect(client.query).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM accounts'), ['acc1'])
+    })
+  })
+
   describe('POST /logout', () => {
     it('deletes the session and clears the cookie', async () => {
       const client = createMockClient()
