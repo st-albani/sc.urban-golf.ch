@@ -261,6 +261,10 @@
       "RemovePlayer": "Remove player",
       "You": "You",
       "AddYou": "This is me",
+      "Registered": "Registered",
+      "SearchRegistered": "Find registered player",
+      "SearchPlaceholder": "Type a name …",
+      "SearchEmpty": "No registered players found.",
       "Errors": {
         "GameAndPlayerRequired": "Please enter a game name and at least one player.",
         "SaveFailed": "Failed to save the game.",

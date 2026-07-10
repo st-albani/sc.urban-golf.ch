@@ -254,11 +254,11 @@ describe('GET /games/:id/players', () => {
 
   afterEach(() => app.close())
 
-  it('returns players for a game', async () => {
-    createMockClient(() => ({
+  it('returns players for a game, flagging registered identities', async () => {
+    const client = createMockClient(() => ({
       rows: [
-        { id: 'p1234567890123', name: 'Alice' },
-        { id: 'p2345678901234', name: 'Bob' },
+        { id: 'canon-alice-01', name: 'Alice', registered: true, avatar: null },
+        { id: 'p2345678901234', name: 'Bob', registered: false, avatar: null },
       ],
     }))
 
@@ -269,6 +269,10 @@ describe('GET /games/:id/players', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.json()).toHaveLength(2)
+    expect(res.json()[0].registered).toBe(true)
+    // Die Query markiert kanonische (Konto-)Identitäten.
+    const call = client.query.mock.calls.find((c) => c[0].includes('AS registered'))
+    expect(call).toBeDefined()
   })
 
   it('returns 400 for invalid game id', async () => {

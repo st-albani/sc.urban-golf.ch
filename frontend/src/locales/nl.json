@@ -261,6 +261,10 @@
       "RemovePlayer": "Speler verwijderen",
       "You": "Jij",
       "AddYou": "Dat ben ik",
+      "Registered": "Geregistreerd",
+      "SearchRegistered": "Geregistreerde speler zoeken",
+      "SearchPlaceholder": "Voer een naam in …",
+      "SearchEmpty": "Geen geregistreerde spelers gevonden.",
       "Errors": {
         "GameAndPlayerRequired": "Voer een spelnaam en minimaal één speler in.",
         "SaveFailed": "Fout bij het opslaan van het spel.",

@@ -136,7 +136,11 @@ export default async function (fastify, _opts) {
     if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });
 
     const rows = await query(
-      `SELECT p.id, p.name
+      // registered/avatar: markiert kanonische (Konto-)Identitäten, damit die
+      // Bearbeiten-Ansicht sie read-only hält (kein versehentliches Umbenennen).
+      `SELECT p.id, p.name,
+              EXISTS (SELECT 1 FROM accounts a WHERE a.player_id = p.id) AS registered,
+              (SELECT a.avatar FROM accounts a WHERE a.player_id = p.id) AS avatar
        FROM players p
        JOIN game_players gp ON gp.player_id = p.id
        WHERE gp.game_id = $1`,

@@ -47,6 +47,16 @@
                 <span class="new-game__self-name">{{ player.name }}</span>
                 <span class="new-game__self-badge">{{ $t('Games.NewGame.You') }}</span>
               </div>
+              <div v-else-if="isRegistered(player)" class="new-game__self new-game__self--registered">
+                <PlayerAvatar
+                  :name="player.name"
+                  :src="player.avatar"
+                  size="sm"
+                  :color="playerColor(index)"
+                />
+                <span class="new-game__self-name">{{ player.name }}</span>
+                <CheckBadgeIcon class="new-game__registered-icon" :aria-label="$t('Games.NewGame.Registered')" />
+              </div>
               <input
                 v-else
                 type="text"
@@ -68,15 +78,51 @@
             </li>
           </transition-group>
 
-          <button
-            v-if="canAddSelf"
-            type="button"
-            class="new-game__add-self"
-            @click="addSelfRow"
-          >
-            <UserIcon class="w-4 h-4" />
-            {{ $t('Games.NewGame.AddYou') }}
-          </button>
+          <div class="new-game__extra-actions">
+            <button
+              v-if="canAddSelf"
+              type="button"
+              class="new-game__add-self"
+              @click="addSelfRow"
+            >
+              <UserIcon class="w-4 h-4" />
+              {{ $t('Games.NewGame.AddYou') }}
+            </button>
+
+            <button
+              v-if="!searchOpen"
+              type="button"
+              class="new-game__add-self"
+              @click="searchOpen = true"
+            >
+              <UserPlusIcon class="w-4 h-4" />
+              {{ $t('Games.NewGame.SearchRegistered') }}
+            </button>
+          </div>
+
+          <div v-if="searchOpen" class="new-game__search">
+            <div class="new-game__search-field">
+              <MagnifyingGlassIcon class="w-4 h-4 new-game__search-icon" />
+              <input
+                v-model="searchTerm"
+                type="text"
+                class="field new-game__search-input"
+                :placeholder="$t('Games.NewGame.SearchPlaceholder')"
+              />
+            </div>
+            <ul v-if="searchResults.length" class="new-game__results">
+              <li v-for="r in searchResults" :key="r.id">
+                <button type="button" class="new-game__result" @click="addRegistered(r)">
+                  <PlayerAvatar :name="r.name" :src="r.avatar" size="sm" color="var(--color-player-3)" />
+                  <span class="new-game__result-name">{{ r.name }}</span>
+                  <PlusIcon class="w-4 h-4" />
+                </button>
+              </li>
+            </ul>
+            <p v-else-if="searchTerm.trim().length >= 2 && !searching" class="t-muted new-game__search-empty">
+              {{ $t('Games.NewGame.SearchEmpty') }}
+            </p>
+          </div>
 
           <AppButton
             variant="secondary"
@@ -122,10 +168,17 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { nanoid } from 'nanoid'
 import { useToast } from '@/composables/useToast'
-import { fetchGame, fetchGamePlayers, createOrUpdatePlayers, createOrUpdateGame } from '@/services/api'
-import { PlusIcon, TrashIcon, PlayIcon, CheckIcon, UserIcon } from '@heroicons/vue/24/outline'
+import { fetchGame, fetchGamePlayers, createOrUpdatePlayers, createOrUpdateGame, searchPlayers, type RegisteredPlayer } from '@/services/api'
+import { PlusIcon, TrashIcon, PlayIcon, CheckIcon, UserIcon, UserPlusIcon, MagnifyingGlassIcon, CheckBadgeIcon } from '@heroicons/vue/24/outline'
 import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
 import { useAuthStore } from '@/stores/auth'
+
+interface Row {
+  id: string
+  name: string
+  registered?: boolean
+  avatar?: string | null
+}
 
 const router = useRouter()
 const route = useRoute()
@@ -135,7 +188,7 @@ const auth = useAuthStore()
 const gameId = computed(() => route.params.gameId as string | undefined)
 
 const gameName = ref('')
-const players = ref([{ id: nanoid(), name: '' }])
+const players = ref<Row[]>([{ id: nanoid(), name: '' }])
 const isEditing = computed(() => !!gameId.value)
 const isSaving = ref(false)
 
@@ -152,15 +205,63 @@ function isSelf(player: { id: string }) {
 const hasSelfRow = computed(() => players.value.some(isSelf))
 const canAddSelf = computed(() => !isEditing.value && !!auth.playerId && !hasSelfRow.value)
 
+function isRegistered(player: Row) {
+  return !!player.registered && !isSelf(player)
+}
+
 function addSelfRow() {
   if (!auth.playerId || hasSelfRow.value) return
-  const meRow = { id: auth.playerId, name: auth.displayName || '' }
+  const meRow: Row = { id: auth.playerId, name: auth.displayName || '', registered: true, avatar: auth.avatar }
   // Eine noch leere Einzelzeile ersetzen, sonst voranstellen.
   if (players.value.length === 1 && players.value[0].name === '' && !isSelf(players.value[0])) {
     players.value = [meRow]
   } else {
     players.value.unshift(meRow)
   }
+}
+
+// ---- Spielersuche (Phase 2): registrierte Spieler hinzufügen ----
+const searchOpen = ref(false)
+const searchTerm = ref('')
+const searchResults = ref<RegisteredPlayer[]>([])
+const searching = ref(false)
+let searchTimer: ReturnType<typeof setTimeout> | undefined
+
+watch(searchTerm, (term) => {
+  clearTimeout(searchTimer)
+  const q = term.trim()
+  if (q.length < 2) {
+    searchResults.value = []
+    searching.value = false
+    return
+  }
+  searching.value = true
+  searchTimer = setTimeout(async () => {
+    try {
+      const results = await searchPlayers(q)
+      // Bereits im Spiel befindliche IDs ausblenden.
+      const present = new Set(players.value.map((p) => p.id))
+      searchResults.value = results.filter((r) => !present.has(r.id))
+    } catch {
+      searchResults.value = []
+    } finally {
+      searching.value = false
+    }
+  }, 250)
+})
+
+function addRegistered(p: RegisteredPlayer) {
+  if (players.value.some((x) => x.id === p.id)) return
+  const row: Row = { id: p.id, name: p.name, registered: true, avatar: p.avatar }
+  // Eine noch leere Freitext-Einzelzeile ersetzen, sonst anhängen.
+  if (players.value.length === 1 && players.value[0].name === '' && !players.value[0].registered) {
+    players.value = [row]
+  } else {
+    players.value.push(row)
+  }
+  searchTerm.value = ''
+  searchResults.value = []
+  searchOpen.value = false
 }
 
 // Beim Öffnen eines neuen Spiels die „Du"-Zeile automatisch anbieten.
@@ -172,7 +273,7 @@ async function loadGame(id: string) {
     const game = await fetchGame(id)
     gameName.value = game?.name || ''
     const existing = await fetchGamePlayers(id)
-    players.value = existing.map(p => ({ id: p.id, name: p.name }))
+    players.value = existing.map(p => ({ id: p.id, name: p.name, registered: p.registered, avatar: p.avatar }))
     if (players.value.length === 0) players.value = [{ id: nanoid(), name: '' }]
   } catch (err) {
     console.error('Failed to load game:', err)
@@ -349,12 +450,30 @@ async function saveGame() {
   border-radius: var(--radius-pill);
 }
 
+.new-game__self--registered {
+  border-style: solid;
+  border-color: color-mix(in oklab, var(--player-accent) 30%, transparent);
+}
+
+.new-game__registered-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  margin-left: auto;
+  flex-shrink: 0;
+  color: color-mix(in oklab, var(--player-accent) 75%, var(--text-strong));
+}
+
+.new-game__extra-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
 .new-game__add-self {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  align-self: flex-start;
   padding: 0.4rem 0.85rem;
   border-radius: var(--radius-pill);
   border: 1px dashed var(--card-border);
@@ -365,6 +484,51 @@ async function saveGame() {
   transition: color 150ms, border-color 150ms;
 }
 .new-game__add-self:hover { color: var(--primary); border-color: var(--primary); }
+
+.new-game__search {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.new-game__search-field { position: relative; display: flex; align-items: center; }
+.new-game__search-icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+.new-game__search-input { width: 100%; padding-left: 2.25rem; }
+
+.new-game__results {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.new-game__result {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  background: transparent;
+  border: 0;
+  color: var(--text-default);
+  cursor: pointer;
+  transition: background 150ms;
+}
+.new-game__result:hover { background: color-mix(in oklab, var(--text-default) 6%, transparent); }
+.new-game__result-name { flex: 1 1 auto; text-align: left; font-weight: 600; font-size: var(--text-sm); }
+.new-game__result :deep(svg:last-child) { color: var(--text-muted); flex-shrink: 0; }
+
+.new-game__search-empty { font-size: var(--text-sm); padding: 0.25rem 0.25rem 0; }
 
 .new-game__remove {
   width: 2.5rem;

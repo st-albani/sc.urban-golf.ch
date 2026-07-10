@@ -261,6 +261,10 @@
       "RemovePlayer": "Retirer le joueur",
       "You": "Toi",
       "AddYou": "C'est moi",
+      "Registered": "Enregistré",
+      "SearchRegistered": "Chercher un joueur enregistré",
+      "SearchPlaceholder": "Saisir un nom …",
+      "SearchEmpty": "Aucun joueur enregistré trouvé.",
       "Errors": {
         "GameAndPlayerRequired": "Veuillez saisir un nom de partie et au moins un joueur.",
         "SaveFailed": "Échec de l'enregistrement de la partie.",

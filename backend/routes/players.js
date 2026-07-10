@@ -33,4 +33,29 @@ export default async function (fastify, _opts) {
     const rows = await query('SELECT * FROM players ORDER BY name');
     reply.send(rows);
   });
+
+  // Registrierte Spieler suchen (Konten mit kanonischer Identität, d. h.
+  // gesetztem Anzeigenamen). Für die Spielersuche beim Erstellen eines
+  // Spiels — bewusst auch ohne Login nutzbar.
+  fastify.get('/search', {
+    config: { rateLimit: { max: 30, timeWindow: '1 minute' } },
+  }, async (req, reply) => {
+    const q = String(req.query.q || '').trim();
+    if (q.length < 2) return reply.send({ players: [] });
+    try {
+      const rows = await query(
+        `SELECT p.id, p.name, a.avatar
+         FROM accounts a
+         JOIN players p ON p.id = a.player_id
+         WHERE a.display_name IS NOT NULL AND p.name ILIKE $1
+         ORDER BY p.name
+         LIMIT 10`,
+        [`%${q}%`],
+      );
+      reply.send({ players: rows });
+    } catch (err) {
+      fastify.log.error(err);
+      reply.code(500).send({ error: 'Database error' });
+    }
+  });
 }

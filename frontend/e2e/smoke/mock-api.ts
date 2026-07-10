@@ -174,6 +174,14 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
     })
   })
 
+  await page.route('**/api/players/search**', (route) => {
+    const url = new URL(route.request().url())
+    const q = (url.searchParams.get('q') || '').trim().toLowerCase()
+    const registered = [{ id: 'canon-registered-rita', name: 'Registrierte Rita', avatar: null }]
+    const players = q.length >= 2 ? registered.filter((p) => p.name.toLowerCase().includes(q)) : []
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ players }) })
+  })
+
   await page.route('**/api/scores**', async (route) => {
     const req = route.request()
     if (req.method() === 'POST') {
