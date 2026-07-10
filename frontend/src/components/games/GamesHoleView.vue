@@ -226,6 +226,18 @@ const { t } = useI18n()
 const gameId = computed(() => route.params.gameId as string)
 const hole = computed(() => parseInt(route.params.holeId as string))
 
+// Guard gegen ungültige Loch-Nummern in der URL (z. B. /games/:id/NaN aus einem
+// veralteten Link oder einer korrupten Weiter-Navigation). Ohne diese Umleitung
+// landet NaN über saveScore in der holes-Liste und die Scorecard zeigt eine
+// "NaN"-Kachel für ein nie gespieltes Loch.
+watch(hole, (h) => {
+  if (Number.isInteger(h) && h >= VALIDATION.HOLE_MIN && h <= VALIDATION.HOLE_MAX) return
+  const safe = Number.isFinite(h)
+    ? Math.min(VALIDATION.HOLE_MAX, Math.max(VALIDATION.HOLE_MIN, h))
+    : VALIDATION.HOLE_MIN
+  void router.replace(`/games/${gameId.value}/${safe}`)
+}, { immediate: true })
+
 const context = inject(gamesDetailKey)!
 const { players, scores, holes, gameName, lockedScores } = context
 const { saveScore: saveScoreOffline } = useScoreSyncStore()
@@ -399,7 +411,7 @@ async function saveScore(playerId: string) {
     // Erst NACHDEM ein Score gespeichert ist, tauchen wir das Loch in der
     // geteilten holes-Liste auf — so erscheint ein "weitergeblättertes" Loch
     // OHNE eingegebenen Score weder in der Scorecard noch im Pill-Strip.
-    if (!holes.value.includes(hole.value)) {
+    if (Number.isInteger(hole.value) && !holes.value.includes(hole.value)) {
       holes.value = [...holes.value, hole.value].sort((a, b) => a - b)
     }
   } finally {
