@@ -53,44 +53,47 @@
       </div>
     </header>
 
-    <!-- Vollständigkeit des aktuellen Lochs: "X/Y erfasst". aria-live kündigt
-         Änderungen für Screenreader an, ohne den Fokus zu verschieben. -->
-    <p
-      v-if="players.length"
-      class="hole-completion"
-      :class="{ 'is-complete': currentComplete }"
-      role="status"
-      aria-live="polite"
-    >
-      <CheckCircleIcon v-if="currentComplete" class="hole-completion__icon" aria-hidden="true" />
-      <span>{{ $t('Games.HoleView.Completion', { done: currentCompletion.done, total: currentCompletion.total }) }}</span>
-    </p>
+    <!-- Fortschritt: Loch-Pills + kompakter Vollständigkeits-Zähler in einer
+         Reihe. Der Zähler ersetzt die frühere eigene Zeile und spart Höhe;
+         der volle Text bleibt als aria-label für Screenreader erhalten. -->
+    <div class="hole-progress-row">
+      <div ref="pillsRef" class="hole-progress scroll-hide" role="list">
+        <router-link
+          v-for="n in holes"
+          :key="n"
+          :ref="el => setPillRef(n, el as unknown as { $el?: HTMLElement } | HTMLElement | null)"
+          :to="`/games/${gameId}/${n}`"
+          :class="['hole-progress__chip', {
+            'is-current': n === hole,
+            'is-partial': holeStateFor(n) === 'partial',
+            'is-complete': holeStateFor(n) === 'complete',
+          }]"
+          :aria-label="pillAriaLabel(n)"
+          role="listitem"
+        >
+          {{ n }}
+          <CheckIcon v-if="holeStateFor(n) === 'complete'" class="hole-progress__check" aria-hidden="true" />
+        </router-link>
+        <router-link
+          :to="`/games/${gameId}/${nextNewHole}`"
+          class="hole-progress__chip hole-progress__chip--add"
+          :aria-label="$t('General.Hole') + ' +1'"
+        >
+          <PlusIcon class="w-3.5 h-3.5" />
+        </router-link>
+      </div>
 
-    <!-- Fortschritt: Loch-Pills — aktives Loch wird automatisch zentriert -->
-    <div ref="pillsRef" class="hole-progress scroll-hide" role="list">
-      <router-link
-        v-for="n in holes"
-        :key="n"
-        :ref="el => setPillRef(n, el as unknown as { $el?: HTMLElement } | HTMLElement | null)"
-        :to="`/games/${gameId}/${n}`"
-        :class="['hole-progress__chip', {
-          'is-current': n === hole,
-          'is-partial': holeStateFor(n) === 'partial',
-          'is-complete': holeStateFor(n) === 'complete',
-        }]"
-        :aria-label="pillAriaLabel(n)"
-        role="listitem"
+      <span
+        v-if="players.length"
+        class="hole-completion"
+        :class="{ 'is-complete': currentComplete }"
+        role="status"
+        aria-live="polite"
+        :aria-label="$t('Games.HoleView.Completion', { done: currentCompletion.done, total: currentCompletion.total })"
       >
-        {{ n }}
-        <CheckIcon v-if="holeStateFor(n) === 'complete'" class="hole-progress__check" aria-hidden="true" />
-      </router-link>
-      <router-link
-        :to="`/games/${gameId}/${nextNewHole}`"
-        class="hole-progress__chip hole-progress__chip--add"
-        :aria-label="$t('General.Hole') + ' +1'"
-      >
-        <PlusIcon class="w-3.5 h-3.5" />
-      </router-link>
+        <CheckIcon v-if="currentComplete" class="hole-completion__icon" aria-hidden="true" />
+        {{ currentCompletion.done }}/{{ currentCompletion.total }}
+      </span>
     </div>
 
     <!-- Spieler-Karten -->
@@ -113,9 +116,6 @@
             size="md"
           />
           <h2 class="player-tile__name" :title="player.name">{{ player.name }}</h2>
-          <span v-if="!hasCurrentScore(player.id)" class="player-tile__missing-badge">
-            {{ $t('Games.HoleView.MissingScore') }}
-          </span>
         </div>
 
         <div class="player-tile__controls">
@@ -138,7 +138,7 @@
             :aria-label="$t('Games.HoleView.ScoreFor', { player: player.name }) + ': ' + (hasCurrentScore(player.id) ? scores[player.id]?.[hole] : $t('Games.HoleView.MissingScore'))"
             :aria-busy="savingMap[player.id] || undefined"
           >
-            {{ scores[player.id]?.[hole] ?? '–' }}
+            {{ hasCurrentScore(player.id) ? scores[player.id]?.[hole] : '–' }}
           </button>
 
           <button
@@ -216,7 +216,7 @@ import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
 import {
   MinusIcon, PlusIcon,
   ChevronLeftIcon, ChevronRightIcon, ChevronDownIcon,
-  PencilSquareIcon, CheckCircleIcon, CheckIcon,
+  PencilSquareIcon, CheckIcon,
 } from '@heroicons/vue/24/outline'
 
 const route = useRoute()
@@ -543,20 +543,27 @@ function ensureScoreFieldsExist() {
   font-variant-numeric: tabular-nums;
 }
 
-/* Vollständigkeits-Zähler des aktuellen Lochs */
+/* Loch-Pills + Vollständigkeits-Zähler teilen sich eine Reihe */
+.hole-progress-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+/* Kompakter Vollständigkeits-Zähler rechts neben den Pills */
 .hole-completion {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  align-self: flex-start;
-  padding: 0.25rem 0.7rem;
+  gap: 0.25rem;
+  padding: 0.3rem 0.6rem;
   border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--text-default) 7%, transparent);
+  background: color-mix(in oklab, var(--text-default) 6%, transparent);
   color: var(--text-muted);
   font-size: var(--text-sm);
-  font-weight: 600;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  margin-top: -0.15rem;
+  line-height: 1;
 }
 
 .hole-completion.is-complete {
@@ -569,13 +576,16 @@ function ensureScoreFieldsExist() {
 }
 
 .hole-completion__icon {
-  width: 1rem;
-  height: 1rem;
+  width: 0.9rem;
+  height: 0.9rem;
   flex-shrink: 0;
+  stroke-width: 2.5;
 }
 
 /* Progress pills */
 .hole-progress {
+  flex: 1 1 auto;
+  min-width: 0;
   display: flex;
   gap: 0.4rem;
   overflow-x: auto;
@@ -666,6 +676,7 @@ function ensureScoreFieldsExist() {
   box-shadow: var(--shadow-elev-1);
   position: relative;
   overflow: hidden;
+  transition: background 240ms var(--ease-standard);
 }
 
 .player-tile::before {
@@ -678,6 +689,7 @@ function ensureScoreFieldsExist() {
   background: var(--player-accent);
   border-radius: 0 3px 3px 0;
   box-shadow: 3px 0 10px -4px color-mix(in oklab, var(--player-accent) 25%, transparent);
+  transition: opacity 240ms var(--ease-standard);
 }
 
 :root.dark .player-tile::before {
@@ -686,11 +698,19 @@ function ensureScoreFieldsExist() {
   box-shadow: 3px 0 8px -5px color-mix(in oklab, var(--player-accent) 20%, transparent);
 }
 
-/* Loch noch nicht für diesen Spieler erfasst: dezente Hervorhebung, damit
-   die Lücke ins Auge springt, ohne die Farbakzente zu dominieren. */
+/* Loch noch nicht für diesen Spieler erfasst: ruhige, "wartende" Kachel.
+   Der farbige Akzentbalken leuchtet erst beim Erfassen voll auf und der
+   "–"-Wert ist gedämpft — kein Badge, damit der Name nie verdeckt wird. */
 .player-tile--missing {
-  border-color: color-mix(in oklab, var(--color-warning-500) 45%, var(--card-border));
-  background: color-mix(in oklab, var(--color-warning-500) 6%, var(--card-bg));
+  background: color-mix(in oklab, var(--text-default) 4%, var(--card-bg));
+}
+
+.player-tile--missing::before {
+  opacity: 0.4;
+}
+
+.player-tile--missing .stroke-value {
+  color: var(--text-muted);
 }
 
 .player-tile__identity {
@@ -700,22 +720,6 @@ function ensureScoreFieldsExist() {
   gap: 0.6rem;
   min-width: 0;
   padding-left: 0.3rem;
-}
-
-.player-tile__missing-badge {
-  flex-shrink: 0;
-  padding: 0.1rem 0.5rem;
-  border-radius: var(--radius-pill);
-  background: color-mix(in oklab, var(--color-warning-500) 20%, transparent);
-  color: color-mix(in oklab, var(--color-warning-600) 85%, var(--text-strong));
-  font-size: var(--text-xs);
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  white-space: nowrap;
-}
-
-:root.dark .player-tile__missing-badge {
-  color: var(--color-warning-400);
 }
 
 .player-tile__name {
