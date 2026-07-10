@@ -263,6 +263,7 @@
       "AddYou": "This is me",
       "Registered": "Registered",
       "SearchHint": "Tip: registered players are suggested as you type a name.",
+      "IdTag": "Identifier to tell players apart",
       "Errors": {
         "GameAndPlayerRequired": "Please enter a game name and at least one player.",
         "SaveFailed": "Failed to save the game.",

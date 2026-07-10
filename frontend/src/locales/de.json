@@ -263,6 +263,7 @@
       "AddYou": "Das bin ich",
       "Registered": "Registriert",
       "SearchHint": "Tipp: Beim Tippen eines Namens werden registrierte Spieler vorgeschlagen.",
+      "IdTag": "Kennung zur Unterscheidung",
       "Errors": {
         "GameAndPlayerRequired": "Bitte Spielname und mindestens einen Spieler angeben.",
         "SaveFailed": "Fehler beim Speichern des Spiels.",
