@@ -129,6 +129,17 @@
     "ScanHint": "Zum Beitreten scannen",
     "QrAlt": "QR-Code zum Spiel-Link"
   },
+  "Join": {
+    "Title": "Spiel beitreten",
+    "StartCamera": "Kamera starten",
+    "StopCamera": "Kamera stoppen",
+    "ManualLabel": "Oder Link/ID einfügen",
+    "ManualPlaceholder": "Link oder Spiel-ID",
+    "Submit": "Beitreten",
+    "InvalidRef": "Kein gültiger Spiel-Link.",
+    "CameraDenied": "Kein Kamerazugriff. Gib den Link stattdessen manuell ein.",
+    "CameraUnsupported": "Kamera nicht verfügbar. Gib den Link stattdessen manuell ein."
+  },
   "Feedback": {
     "Title": "Feedback zur Scorecard",
     "Subtitle": "Was können wir besser machen? Jedes Feedback hilft.",

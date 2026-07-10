@@ -1,7 +1,17 @@
 <template>
   <div class="container-app games-list-page">
     <header class="games-list-page__header">
-      <h1 class="t-headline">{{ $t('Games.ListGames.AllGames') }}</h1>
+      <div class="games-list-page__title-row">
+        <h1 class="t-headline">{{ $t('Games.ListGames.AllGames') }}</h1>
+        <AppIconButton
+          :label="$t('Join.Title')"
+          variant="outline"
+          size="md"
+          @click="joinOpen = true"
+        >
+          <QrCodeIcon class="w-5 h-5" />
+        </AppIconButton>
+      </div>
 
       <div class="games-list-page__search">
         <span class="games-list-page__search-icon" aria-hidden="true">
@@ -38,13 +48,17 @@
         </div>
       </template>
     </Suspense>
+
+    <JoinGameSheet v-model="joinOpen" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import GamesListCompactContent from '@/components/games/GamesListCompactContent.vue'
-import { MagnifyingGlassIcon, XMarkIcon } from '@heroicons/vue/24/outline'
+import JoinGameSheet from '@/components/games/JoinGameSheet.vue'
+import AppIconButton from '@/components/ui/AppIconButton.vue'
+import { MagnifyingGlassIcon, XMarkIcon, QrCodeIcon } from '@heroicons/vue/24/outline'
 
 function calculatePerPage(): number {
   const available = typeof window !== 'undefined' ? window.innerHeight - 320 : 600
@@ -53,6 +67,7 @@ function calculatePerPage(): number {
 
 const searchTerm = ref('')
 const perPage = ref(calculatePerPage())
+const joinOpen = ref(false)
 
 function handleResize() { perPage.value = calculatePerPage() }
 
@@ -72,6 +87,13 @@ onUnmounted(() => { window.removeEventListener('resize', handleResize) })
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
+}
+
+.games-list-page__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .games-list-page__search {

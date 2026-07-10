@@ -25,6 +25,7 @@
     "@urban-golf/contract": "*",
     "@vueuse/core": "^14.0.0",
     "axios": "^1.15.2",
+    "jsqr": "^1.4.0",
     "marked": "^18.0.2",
     "nanoid": "^5.1.6",
     "pinia": "^3.0.4",

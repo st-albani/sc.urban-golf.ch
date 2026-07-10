@@ -129,6 +129,17 @@
     "ScanHint": "Scanner pour rejoindre",
     "QrAlt": "QR code du lien de la partie"
   },
+  "Join": {
+    "Title": "Rejoindre la partie",
+    "StartCamera": "Démarrer la caméra",
+    "StopCamera": "Arrêter la caméra",
+    "ManualLabel": "Ou collez un lien/ID",
+    "ManualPlaceholder": "Lien ou ID de partie",
+    "Submit": "Rejoindre",
+    "InvalidRef": "Lien de partie invalide.",
+    "CameraDenied": "Pas d'accès à la caméra. Saisissez le lien manuellement.",
+    "CameraUnsupported": "Caméra indisponible. Saisissez le lien manuellement."
+  },
   "Feedback": {
     "Title": "Retour sur la scorecard",
     "Subtitle": "Comment pouvons-nous faire mieux ? Chaque retour aide.",
