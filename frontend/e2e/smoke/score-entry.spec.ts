@@ -18,12 +18,15 @@ test.describe('Score-Entry Hole-View (Smoke)', () => {
     const annaTile = page.locator('.player-tile', { hasText: 'Anna Meier' })
     await expect(annaTile.locator('.stroke-value')).toHaveText('3')
 
-    // + Button
+    // + Button — der Save ist debounced/coalesced, daher auf den tatsächlichen
+    // POST warten statt auf eine feste Zeit.
+    const scorePost = page.waitForRequest(
+      (req) => req.method() === 'POST' && /\/api\/scores(\?|$)/.test(req.url()),
+    )
     await annaTile.getByRole('button', { name: 'Mehr Schläge' }).click()
     await expect(annaTile.locator('.stroke-value')).toHaveText('4')
 
-    // Warten bis der POST abgesetzt wurde
-    await page.waitForTimeout(250)
+    await scorePost
     expect(scorePosts.length).toBeGreaterThan(0)
     const last = scorePosts.at(-1) as { strokes: number; hole: number }
     expect(last.strokes).toBe(4)

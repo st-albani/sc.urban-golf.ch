@@ -120,7 +120,6 @@
             @click="changeStrokes(player.id, -1)"
             class="stroke-btn"
             :aria-label="$t('General.FewerStrokes')"
-            :disabled="savingMap[player.id]"
             type="button"
           >
             <MinusIcon class="w-6 h-6" />
@@ -142,7 +141,6 @@
             @click="changeStrokes(player.id, 1)"
             class="stroke-btn"
             :aria-label="$t('General.MoreStrokes')"
-            :disabled="savingMap[player.id]"
             type="button"
           >
             <PlusIcon class="w-6 h-6" />
@@ -317,7 +315,7 @@ function selectKeypadValue(n: number) {
   scores.value[keypadPlayerId.value][hole.value] = n
   triggerPulse(keypadPlayerId.value)
   hapticFeedback()
-  void saveScore(keypadPlayerId.value)
+  queueSave(keypadPlayerId.value)
   keypadOpen.value = false
 }
 
@@ -390,33 +388,76 @@ function changeStrokes(playerId: string, delta: number) {
   scores.value[playerId][hole.value] = updated
   triggerPulse(playerId)
   hapticFeedback()
-  void saveScore(playerId)
+  queueSave(playerId)
 }
 
-// In-flight Save-State pro Spieler — Buttons disablen, doppelte Requests verhindern
+// Rein visueller Saving-State pro Spieler (dämpft den Score während des
+// Requests). Die Buttons bleiben bedienbar — das schnelle Zählen wird nie
+// blockiert, weil Eingaben sofort lokal wirken.
 const savingMap = ref<Record<string, boolean>>({})
 
-async function saveScore(playerId: string) {
-  // Feld gegen Live-Overwrite sperren, solange gespeichert wird.
-  const lockKey = scoreKey(playerId, hole.value)
+// Debounced, coalesced Speicherung pro (Spieler, Loch): Taps wirken sofort
+// lokal, aber erst nach kurzer Ruhe wird der ZULETZT getippte Wert einmal ans
+// Backend geschickt. Kein Request-Sturm, keine gesperrten Buttons.
+const SAVE_DEBOUNCE_MS = 400
+type PendingSave = { playerId: string; hole: number; timer: ReturnType<typeof setTimeout> }
+const pendingSaves = new Map<string, PendingSave>()
+const inFlight = new Set<string>()
+
+function queueSave(playerId: string) {
+  const h = hole.value
+  const lockKey = scoreKey(playerId, h)
+  // Feld sofort gegen Live-Overwrite sperren — bleibt gesperrt bis der Save
+  // durch ist und kein neuer Tap mehr aussteht.
   lockedScores.value.add(lockKey)
+
+  const existing = pendingSaves.get(lockKey)
+  if (existing) clearTimeout(existing.timer)
+  const timer = setTimeout(() => void runSave(lockKey), SAVE_DEBOUNCE_MS)
+  pendingSaves.set(lockKey, { playerId, hole: h, timer })
+}
+
+async function runSave(lockKey: string) {
+  const entry = pendingSaves.get(lockKey)
+  if (!entry) return
+  // Läuft für dieses Feld noch ein Request, kurz warten und erneut versuchen —
+  // so bleibt die Reihenfolge pro Feld erhalten (kein Out-of-order-Overwrite).
+  if (inFlight.has(lockKey)) {
+    entry.timer = setTimeout(() => void runSave(lockKey), SAVE_DEBOUNCE_MS)
+    return
+  }
+  pendingSaves.delete(lockKey)
+  const { playerId, hole: h } = entry
+  inFlight.add(lockKey)
   savingMap.value[playerId] = true
   try {
     await saveScoreOffline({
       game_id: gameId.value,
       player_id: playerId,
-      hole: hole.value,
-      strokes: Number(scores.value[playerId][hole.value]),
+      hole: h,
+      strokes: Number(scores.value[playerId][h]),
     })
     // Erst NACHDEM ein Score gespeichert ist, tauchen wir das Loch in der
     // geteilten holes-Liste auf — so erscheint ein "weitergeblättertes" Loch
     // OHNE eingegebenen Score weder in der Scorecard noch im Pill-Strip.
-    if (Number.isInteger(hole.value) && !holes.value.includes(hole.value)) {
-      holes.value = [...holes.value, hole.value].sort((a, b) => a - b)
+    if (Number.isInteger(h) && !holes.value.includes(h)) {
+      holes.value = [...holes.value, h].sort((a, b) => a - b)
     }
   } finally {
+    inFlight.delete(lockKey)
     savingMap.value[playerId] = false
-    lockedScores.value.delete(lockKey)
+    // Lock nur lösen, wenn zwischenzeitlich kein neuer Tap einen weiteren Save
+    // eingeplant hat.
+    if (!pendingSaves.has(lockKey)) lockedScores.value.delete(lockKey)
+  }
+}
+
+// Ausstehende Saves sofort committen (bei Loch-Wechsel / Verlassen der View),
+// damit ein schnelles Weiterblättern nichts verliert.
+function flushPendingSaves() {
+  for (const [lockKey, entry] of [...pendingSaves]) {
+    clearTimeout(entry.timer)
+    void runSave(lockKey)
   }
 }
 
@@ -441,6 +482,8 @@ function scrollCurrentPillIntoView() {
 }
 
 watch(() => hole.value, () => {
+  // Vor dem Loch-Wechsel noch ausstehende Saves des alten Lochs committen.
+  flushPendingSaves()
   ensureScoreFieldsExist()
   // Nach dem Render der neuen Route den Pill scrollen
   requestAnimationFrame(() => scrollCurrentPillIntoView())
@@ -453,6 +496,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeypadKey)
+  // Nicht verworfene Eingaben beim Verlassen der View noch persistieren.
+  flushPendingSaves()
 })
 
 function ensureScoreFieldsExist() {
