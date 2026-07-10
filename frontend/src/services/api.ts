@@ -128,6 +128,9 @@ export interface Account {
   email: string
   displayName: string | null
   avatar: string | null
+  // Kanonische Selbst-Identität: stabile Spieler-ID des Kontos (für die
+  // „Das bin ich"-Zeile beim Erstellen eines Spiels wiederverwendet).
+  playerId: string | null
 }
 
 export async function requestOtp(email: string): Promise<void> {
@@ -153,12 +156,12 @@ export async function logout(): Promise<void> {
   await axios.post(`${API_ROUTES.AUTH}/logout`)
 }
 
-export async function setProfile(displayName: string): Promise<{ account: Account; claimedCount: number }> {
-  const { data } = await axios.post<{ account: Account; claimedCount: number }>(
+export async function setProfile(displayName: string): Promise<Account> {
+  const { data } = await axios.post<{ account: Account }>(
     `${API_ROUTES.AUTH}/profile`,
     { displayName },
   )
-  return data
+  return data.account
 }
 
 export async function fetchMyGames(): Promise<GameSummary[]> {

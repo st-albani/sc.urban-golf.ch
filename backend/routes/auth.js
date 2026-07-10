@@ -9,6 +9,7 @@ import {
   hashToken,
   generateOtpCode,
   generateSessionToken,
+  generatePlayerId,
   normalizeEmail,
   sessionCookieOptions,
   getAccountFromRequest,
@@ -20,6 +21,7 @@ const toAccount = (r) => ({
   email: r.email,
   displayName: r.display_name,
   avatar: r.avatar ?? null,
+  playerId: r.player_id ?? null,
 });
 
 export default async function (fastify, _opts) {
@@ -98,7 +100,7 @@ export default async function (fastify, _opts) {
       account = await queryOne(
         `INSERT INTO accounts (email) VALUES ($1)
            ON CONFLICT (email) DO UPDATE SET email = EXCLUDED.email
-         RETURNING id, email, display_name, avatar`,
+         RETURNING id, email, display_name, avatar, player_id`,
         [email],
       );
 
@@ -128,28 +130,46 @@ export default async function (fastify, _opts) {
     }
   });
 
-  // Anzeigename setzen + eigene Spieler-Einträge (per Name) beanspruchen.
+  // Anzeigename setzen. Etabliert die kanonische Selbst-Identität: eine
+  // stabile Spieler-Zeile pro Konto. KEIN namensbasiertes Claiming mehr —
+  // die Zuordnung läuft ausschließlich explizit über diese eine ID.
   fastify.post('/profile', {
     schema: schemas.postAuthProfile,
     preHandler: requireAuth,
     config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
   }, async (request, reply) => {
     const displayName = request.body.displayName.trim();
+    const accountId = request.account.id;
     try {
-      const account = await queryOne(
-        `UPDATE accounts SET display_name = $2 WHERE id = $1
-         RETURNING id, email, display_name, avatar`,
-        [request.account.id, displayName],
-      );
-      // Anonyme Spieler-Einträge mit exakt diesem Namen dem Account zuordnen.
-      const claimed = await query(
-        `INSERT INTO account_players (account_id, player_id)
-         SELECT $1, p.id FROM players p WHERE p.name = $2
-         ON CONFLICT DO NOTHING
-         RETURNING player_id`,
-        [request.account.id, displayName],
-      );
-      return reply.send({ account: toAccount(account), claimedCount: claimed.length });
+      const account = await transaction(async (client) => {
+        // Kanonische Spieler-Zeile anlegen (falls noch keine) oder umbenennen.
+        let playerId = request.account.playerId;
+        if (playerId) {
+          await client.query(`UPDATE players SET name = $2 WHERE id = $1`, [playerId, displayName]);
+        } else {
+          playerId = generatePlayerId();
+          await client.query(`INSERT INTO players (id, name) VALUES ($1, $2)`, [playerId, displayName]);
+        }
+
+        const updated = await client.query(
+          `UPDATE accounts SET display_name = $2, player_id = $3 WHERE id = $1
+           RETURNING id, email, display_name, avatar, player_id`,
+          [accountId, displayName, playerId],
+        );
+
+        // account_players auf genau die kanonische Selbst-Zeile setzen —
+        // räumt zugleich etwaige alte (namensbasierte) Zuordnungen weg.
+        await client.query(`DELETE FROM account_players WHERE account_id = $1`, [accountId]);
+        await client.query(
+          `INSERT INTO account_players (account_id, player_id) VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [accountId, playerId],
+        );
+
+        return updated.rows[0];
+      });
+
+      return reply.send({ account: toAccount(account) });
     } catch (err) {
       request.log.error(err);
       return reply.code(500).send({ error: 'Database error' });
@@ -168,7 +188,7 @@ export default async function (fastify, _opts) {
     try {
       const account = await queryOne(
         `UPDATE accounts SET avatar = $2 WHERE id = $1
-         RETURNING id, email, display_name, avatar`,
+         RETURNING id, email, display_name, avatar, player_id`,
         [request.account.id, value],
       );
       return reply.send({ account: toAccount(account) });

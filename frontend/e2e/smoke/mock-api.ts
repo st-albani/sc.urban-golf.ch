@@ -198,7 +198,7 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
   // ---- Auth (optionale Identität) ----
   // Zustandsbehaftet, damit die "Session" auch einen Reload (page.goto) überlebt
   // — wie ein echtes Cookie.
-  const authState: { account: { id: string; email: string; displayName: string | null; avatar: string | null } | null } = { account: null }
+  const authState: { account: { id: string; email: string; displayName: string | null; avatar: string | null; playerId: string | null } | null } = { account: null }
 
   await page.route('**/api/auth/request-otp', (route) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) }),
@@ -206,7 +206,7 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
   await page.route('**/api/auth/verify-otp', (route) => {
     const payload = JSON.parse(route.request().postData() || '{}') as { email: string; code: string }
     if (payload.code === '123456') {
-      authState.account = { id: 'acc-mock-1', email: payload.email, displayName: null, avatar: null }
+      authState.account = { id: 'acc-mock-1', email: payload.email, displayName: null, avatar: null, playerId: null }
       return route.fulfill({
         status: 200,
         contentType: 'application/json',
@@ -227,11 +227,15 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
   })
   await page.route('**/api/auth/profile', (route) => {
     const p = JSON.parse(route.request().postData() || '{}') as { displayName: string }
-    if (authState.account) authState.account.displayName = p.displayName
+    // Etabliert die kanonische Selbst-Identität (playerId) — kein Claiming.
+    if (authState.account) {
+      authState.account.displayName = p.displayName
+      authState.account.playerId = authState.account.playerId ?? 'canon-player-mock'
+    }
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: p.displayName, avatar: null }, claimedCount: 2 }),
+      body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: p.displayName, avatar: null, playerId: 'canon-player-mock' } }),
     })
   })
   await page.route('**/api/auth/avatar', (route) => {
@@ -241,7 +245,7 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: null, avatar: value } }),
+      body: JSON.stringify({ account: authState.account ?? { id: 'acc-mock-1', email: 'spieler@example.com', displayName: null, avatar: value, playerId: null } }),
     })
   })
   await page.route('**/api/auth/stats', (route) =>

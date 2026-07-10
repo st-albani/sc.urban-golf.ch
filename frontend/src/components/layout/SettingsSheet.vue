@@ -288,8 +288,8 @@ async function saveName() {
   if (!name || savingName.value) return
   savingName.value = true
   try {
-    const count = await auth.setDisplayName(name)
-    success(count > 0 ? t('Auth.NameClaimed', { count }) : t('Auth.NameSaved'))
+    await auth.setDisplayName(name)
+    success(t('Auth.NameSaved'))
     panel.value = 'root'
   } finally {
     savingName.value = false

@@ -255,8 +255,11 @@ CREATE TABLE public.accounts (
     email text NOT NULL UNIQUE,
     display_name text,
     avatar text,
+    player_id text REFERENCES public.players(id) ON DELETE SET NULL,
     created_at timestamptz DEFAULT now()
 );
+
+CREATE INDEX idx_accounts_player ON public.accounts USING btree (player_id);
 
 CREATE TABLE public.otp_codes (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

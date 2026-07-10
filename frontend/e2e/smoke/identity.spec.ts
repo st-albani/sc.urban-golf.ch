@@ -13,15 +13,15 @@ async function signIn(page: import('@playwright/test').Page) {
 }
 
 test.describe('Identität ↔ Spieler & Meine Spiele (Smoke)', () => {
-  test('Anzeigename setzen ordnet Runden zu', async ({ page, mockApi }) => {
+  test('Anzeigename setzen bestätigt das Speichern', async ({ page, mockApi }) => {
     void mockApi
     await signIn(page)
     await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
     await page.getByRole('button', { name: /Anzeigename/ }).click()
     await page.locator('#settings-name').fill('Anna Meier')
     await page.getByRole('button', { name: 'Absenden' }).click()
-    // Toast bestätigt die Zuordnung
-    await expect(page.locator('.toast__message').filter({ hasText: /zugeordnet/ })).toBeVisible()
+    // Toast bestätigt das Speichern (kein namensbasiertes Claiming mehr)
+    await expect(page.locator('.toast__message').filter({ hasText: /gespeichert|saved/i })).toBeVisible()
   })
 
   test('„Meine Spiele"-Filter zeigt die eigenen Runden', async ({ page, mockApi }) => {
