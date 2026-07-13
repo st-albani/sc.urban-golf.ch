@@ -57,7 +57,7 @@ test.describe('Identität ↔ Spieler & Meine Spiele (Smoke)', () => {
     await signIn(page)
     await page.goto('/account')
     // Verknüpfte Daten sichtbar
-    await expect(page.getByText('Zugeordnete Namen')).toBeVisible()
+    await expect(page.getByText('Anzeigename')).toBeVisible()
     // Löschen → Bestätigung → anonymisiert behalten
     await page.getByRole('button', { name: 'Konto löschen' }).click()
     await page.getByRole('button', { name: 'Score-Daten anonymisiert behalten' }).click()
