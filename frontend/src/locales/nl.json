@@ -122,7 +122,7 @@
   "Account": {
     "DataTitle": "Account & gegevens",
     "Email": "E-mail",
-    "Names": "Gekoppelde namen",
+    "Names": "Weergavenaam",
     "Rounds": "Rondes",
     "Delete": "Account verwijderen",
     "DeleteConfirm": "Account echt verwijderen? Dit kan niet ongedaan worden gemaakt.",
@@ -151,9 +151,8 @@
     "SignedIn": "Ingelogd 🎉",
     "DisplayNameLabel": "Weergavenaam",
     "DisplayNamePlaceholder": "Je naam",
-    "NameHint": "Kies je weergavenaam — bijbehorende rondes worden automatisch aan jou gekoppeld.",
+    "NameHint": "Kies je weergavenaam — zo verschijn je in je rondes.",
     "NameSaved": "Naam opgeslagen.",
-    "NameClaimed": "Naam opgeslagen · {count} rondes gekoppeld.",
     "MyStats": "Mijn statistieken"
   },
   "Profile": {

@@ -122,7 +122,7 @@
   "Account": {
     "DataTitle": "Account & data",
     "Email": "E-mail",
-    "Names": "Linked names",
+    "Names": "Display name",
     "Rounds": "Rounds",
     "Delete": "Delete account",
     "DeleteConfirm": "Really delete your account? This can't be undone.",
@@ -151,9 +151,8 @@
     "SignedIn": "Signed in 🎉",
     "DisplayNameLabel": "Display name",
     "DisplayNamePlaceholder": "Your name",
-    "NameHint": "Pick your display name — matching rounds are linked to you automatically.",
+    "NameHint": "Pick your display name — this is how you'll appear in your rounds.",
     "NameSaved": "Name saved.",
-    "NameClaimed": "Name saved · {count} rounds linked.",
     "MyStats": "My stats"
   },
   "Profile": {
