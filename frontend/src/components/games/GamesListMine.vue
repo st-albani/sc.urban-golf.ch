@@ -13,7 +13,13 @@
         @keydown.enter="go(g.id)"
       >
         <div class="games-list__main">
-          <h3 class="games-list__title">{{ g.name }}</h3>
+          <h3 class="games-list__title">
+            {{ g.name }}
+            <span v-if="g.visibility === 'private'" class="mine__badge">
+              <LockClosedIcon class="mine__badge-icon" aria-hidden="true" />
+              {{ $t('Games.ListGames.PrivateBadge') }}
+            </span>
+          </h3>
           <div class="games-list__meta">
             <span v-if="g.created_at">{{ formatDateCH(g.created_at) }}</span>
             <span v-if="g.holes?.length" class="games-list__meta-dot" aria-hidden="true">·</span>
@@ -31,6 +37,7 @@
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
+import { LockClosedIcon } from '@heroicons/vue/24/outline'
 import { fetchMyGames, type GameSummary, type PlayerWithStats } from '@/services/api'
 import { formatDateCH } from '@/utils/format'
 
@@ -115,6 +122,28 @@ onMounted(async () => {
   font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--text-strong);
+}
+
+.mine__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  margin-left: 0.4rem;
+  vertical-align: middle;
+  font-size: var(--text-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: color-mix(in oklab, var(--text-default) 8%, transparent);
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--radius-pill);
+}
+
+.mine__badge-icon {
+  width: 0.85rem;
+  height: 0.85rem;
+  flex-shrink: 0;
 }
 
 .games-list__meta {

@@ -2,6 +2,26 @@ import { query, queryOne, transaction } from '../db/pg.js';
 import { schemas, isValidId } from '@urban-golf/contract';
 import { getAccountFromRequest } from '../utils/auth.js';
 
+/**
+ * SQL-Fragment: ein Spiel `g` ist sichtbar, wenn es öffentlich ist ODER der
+ * anfragende Account (`meParam`, ein uuid-Platzhalter wie '$1') sein Ersteller
+ * ist bzw. über einen zugeordneten Spieler an ihm teilnimmt. Für anonyme
+ * Requests (Parameter NULL) reduziert es sich auf `visibility = 'public'`.
+ */
+function visibilityGuard(meParam) {
+  return `(
+    g.visibility = 'public'
+    OR (${meParam}::uuid IS NOT NULL AND (
+      g.created_by = ${meParam}::uuid
+      OR EXISTS (
+        SELECT 1 FROM game_players gp2
+        JOIN account_players ap ON ap.player_id = gp2.player_id
+        WHERE gp2.game_id = g.id AND ap.account_id = ${meParam}::uuid
+      )
+    ))
+  )`;
+}
+
 export default async function (fastify, _opts) {
   // Spiel erstellen oder aktualisieren
   fastify.post('/', {
@@ -23,15 +43,24 @@ export default async function (fastify, _opts) {
       const account = await getAccountFromRequest(req);
       const createdBy = account?.id ?? null;
 
+      // Sichtbarkeit nur für eingeloggte Ersteller wirksam — anonyme Spiele
+      // bleiben immer öffentlich (kein privates Spiel ohne Konto).
+      const visibility = account && req.body.visibility === 'private' ? 'private' : 'public';
+
       const game = await transaction(async (client) => {
         const gameResult = await client.query(
           // created_by wird nur beim Anlegen gesetzt; beim Bearbeiten (ON CONFLICT)
-          // bleibt der ursprüngliche Ersteller unangetastet.
-          `INSERT INTO games (id, name, created_by)
-           VALUES ($1, $2, $3)
-           ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name
-           RETURNING id, name`,
-          [id, name, createdBy]
+          // bleibt der ursprüngliche Ersteller unangetastet. Die Sichtbarkeit
+          // darf nur der Ersteller ändern — sonst bleibt der bestehende Wert.
+          `INSERT INTO games (id, name, created_by, visibility)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (id) DO UPDATE SET
+             name = EXCLUDED.name,
+             visibility = CASE
+               WHEN $3 IS NOT NULL AND games.created_by = $3
+               THEN EXCLUDED.visibility ELSE games.visibility END
+           RETURNING id, name, visibility`,
+          [id, name, createdBy, visibility]
         );
 
         if (validPlayers.length > 0) {
@@ -67,41 +96,40 @@ export default async function (fastify, _opts) {
     const search = req.query.search;
 
     try {
-      let gamesQuery = '';
-      let valuesGames = [];
-      let countQuery = '';
-      let valuesCount = [];
+      // Optionale Auth: private Spiele nur für den Ersteller oder einen dem
+      // Konto zugeordneten Mitspieler; anonyme Requests sehen nur öffentliche.
+      const account = await getAccountFromRequest(req);
+      const me = account?.id ?? null;
 
+      // Der Guard umschliesst den gesamten WHERE (auch die Suche), damit ein
+      // privates Spiel nicht über einen Spielernamen durchsickern kann.
+      const whereBase = `WHERE ${visibilityGuard('$1')}`;
+      const baseValues = [me];
+
+      let whereClause = whereBase;
       if (search) {
-        gamesQuery = `
-          SELECT g.* FROM games g
-          WHERE g.name ILIKE $1 OR EXISTS (
+        whereClause += ` AND (
+          g.name ILIKE $2 OR EXISTS (
             SELECT 1 FROM game_players gp
             JOIN players p ON gp.player_id = p.id
-            WHERE gp.game_id = g.id AND p.name ILIKE $1
+            WHERE gp.game_id = g.id AND p.name ILIKE $2
           )
-          ORDER BY g.created_at DESC
-          LIMIT $2 OFFSET $3`;
-
-        valuesGames = [`%${search}%`, perPage, offset];
-
-        countQuery = `
-          SELECT COUNT(*) FROM games g
-          WHERE g.name ILIKE $1 OR EXISTS (
-            SELECT 1 FROM game_players gp
-            JOIN players p ON gp.player_id = p.id
-            WHERE gp.game_id = g.id AND p.name ILIKE $1
-          )`;
-        valuesCount = [`%${search}%`];
-      } else {
-        gamesQuery = `
-          SELECT g.* FROM games g
-          ORDER BY g.created_at DESC
-          LIMIT $1 OFFSET $2`;
-
-        valuesGames = [perPage, offset];
-        countQuery = `SELECT COUNT(*) FROM games g`;
+        )`;
+        baseValues.push(`%${search}%`);
       }
+
+      const limitIdx = baseValues.length + 1;
+      const offsetIdx = baseValues.length + 2;
+
+      const gamesQuery = `
+        SELECT g.* FROM games g
+        ${whereClause}
+        ORDER BY g.created_at DESC
+        LIMIT $${limitIdx} OFFSET $${offsetIdx}`;
+      const valuesGames = [...baseValues, perPage, offset];
+
+      const countQuery = `SELECT COUNT(*) FROM games g ${whereClause}`;
+      const valuesCount = [...baseValues];
 
       const [games, countRows] = await Promise.all([
         query(gamesQuery, valuesGames),
@@ -125,9 +153,20 @@ export default async function (fastify, _opts) {
     const gameId = req.params.id;
     if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });
 
-    const game = await queryOne(`SELECT id, name FROM games WHERE id = $1`, [gameId]);
+    // Phase 1 (ungelistet): der Direktzugriff bleibt offen — visibility und ein
+    // is_owner-Flag werden mitgeliefert, damit das UI private Runden kennzeichnen
+    // und den Sichtbarkeits-Umschalter nur dem Ersteller anbieten kann. Die
+    // created_by-UUID selbst wird nicht nach aussen gegeben.
+    const account = await getAccountFromRequest(req);
+    const me = account?.id ?? null;
+    const game = await queryOne(`SELECT id, name, visibility, created_by FROM games WHERE id = $1`, [gameId]);
     if (!game) return reply.code(404).send({ error: 'Not found' });
-    reply.send(game);
+    reply.send({
+      id: game.id,
+      name: game.name,
+      visibility: game.visibility,
+      is_owner: me != null && game.created_by === me,
+    });
   });
 
   // Spieler eines Spiels abrufen
@@ -155,26 +194,38 @@ export default async function (fastify, _opts) {
     const perPage = Math.min(10, parseInt(req.query.per_page) || 10);
     const offset = (page - 1) * perPage;
     const search = req.query.search;
-    const values = search ? [`%${search}%`, perPage, offset] : [perPage, offset];
 
     try {
-      const searchFilter = search ? `
-        WHERE g.name ILIKE $1
-          OR EXISTS (
+      // Optionale Auth: gleicher Sichtbarkeits-Guard wie GET / — private Spiele
+      // nur für Ersteller/zugeordnete Mitspieler, sonst ausgeblendet.
+      const account = await getAccountFromRequest(req);
+      const me = account?.id ?? null;
+
+      const baseValues = [me];
+      let whereClause = `WHERE ${visibilityGuard('$1')}`;
+      if (search) {
+        whereClause += ` AND (
+          g.name ILIKE $2 OR EXISTS (
             SELECT 1 FROM game_players gp
             JOIN players p ON gp.player_id = p.id
-            WHERE gp.game_id = g.id AND p.name ILIKE $1
-          )` : '';
+            WHERE gp.game_id = g.id AND p.name ILIKE $2
+          )
+        )`;
+        baseValues.push(`%${search}%`);
+      }
 
-      const countValues = search ? [`%${search}%`] : [];
+      const limitIdx = baseValues.length + 1;
+      const offsetIdx = baseValues.length + 2;
+      const values = [...baseValues, perPage, offset];
+      const countValues = [...baseValues];
 
       const gamesQuery = `
         WITH filtered_games AS (
           SELECT g.*
           FROM games g
-          ${searchFilter}
+          ${whereClause}
           ORDER BY g.created_at DESC
-          LIMIT $${search ? 2 : 1} OFFSET $${search ? 3 : 2}
+          LIMIT $${limitIdx} OFFSET $${offsetIdx}
         ),
         player_stats AS (
           SELECT
@@ -211,7 +262,7 @@ export default async function (fastify, _opts) {
         FROM filtered_games g
       `;
 
-      const countQuery = `SELECT COUNT(*) FROM games g ${searchFilter}`;
+      const countQuery = `SELECT COUNT(*) FROM games g ${whereClause}`;
 
       const [games, countRows] = await Promise.all([
         query(gamesQuery, values),

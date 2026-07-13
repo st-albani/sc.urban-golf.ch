@@ -6,10 +6,11 @@
     @update:model-value="v => emit('update:modelValue', v)"
   >
     <div class="share">
-      <!-- Transparenz: jeder mit dem Link kann mitschreiben -->
+      <!-- Transparenz: jeder mit dem Link kann mitschreiben. Bei privaten
+           Spielen (Phase 1: ungelistet) ist der Link die einzige Zugangsschranke. -->
       <p class="share__notice">
         <InformationCircleIcon class="share__notice-icon" aria-hidden="true" />
-        <span>{{ $t('Share.EditWarning') }}</span>
+        <span>{{ props.private ? $t('Share.EditWarningPrivate') : $t('Share.EditWarning') }}</span>
       </p>
 
       <!-- QR-Code: Mitspieler scannt mit dem Handy und ist sofort im Spiel -->
@@ -68,7 +69,7 @@ import AppButton from '@/components/ui/AppButton.vue'
 import { useShareGame } from '@/composables/useShareGame'
 import { useQrCode } from '@/composables/useQrCode'
 
-const props = defineProps<{ modelValue: boolean; gameId: string; gameName: string }>()
+const props = defineProps<{ modelValue: boolean; gameId: string; gameName: string; private?: boolean }>()
 const emit = defineEmits<{ 'update:modelValue': [value: boolean] }>()
 
 const { t } = useI18n()

@@ -1,6 +1,6 @@
 import { ref, type Ref } from 'vue'
 import { fetchGame, fetchGamePlayers, fetchScores } from '@/services/api'
-import type { Player } from '@/services/api'
+import type { Player, GameVisibility } from '@/services/api'
 
 type ScoreMap = { [playerId: string]: { [hole: number]: number | string } }
 
@@ -9,6 +9,7 @@ export function useGamesDetailData(gameId: Ref<string>) {
   const scores = ref<ScoreMap>({})
   const holes = ref<number[]>([])
   const gameName = ref<string>('')
+  const visibility = ref<GameVisibility>('public')
   const error = ref<string | null>(null)
 
   async function load() {
@@ -21,6 +22,7 @@ export function useGamesDetailData(gameId: Ref<string>) {
       ])
 
       gameName.value = game.name || `Game #${gameId.value}`
+      visibility.value = game.visibility === 'private' ? 'private' : 'public'
       players.value = playerList
 
       for (const player of players.value) {
@@ -42,5 +44,5 @@ export function useGamesDetailData(gameId: Ref<string>) {
     }
   }
 
-  return { players, scores, holes, gameName, error, load }
+  return { players, scores, holes, gameName, visibility, error, load }
 }

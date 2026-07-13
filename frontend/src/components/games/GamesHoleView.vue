@@ -193,7 +193,7 @@
       </div>
     </AppBottomSheet>
 
-    <ShareGameSheet v-model="shareOpen" :game-id="gameId" :game-name="gameName" />
+    <ShareGameSheet v-model="shareOpen" :game-id="gameId" :game-name="gameName" :private="visibility === 'private'" />
   </div>
 </template>
 
@@ -237,7 +237,7 @@ watch(hole, (h) => {
 }, { immediate: true })
 
 const context = inject(gamesDetailKey)!
-const { players, scores, holes, gameName, lockedScores } = context
+const { players, scores, holes, gameName, visibility, lockedScores } = context
 const { saveScore: saveScoreOffline } = useScoreSyncStore()
 const { colorMap } = usePlayerColors(players)
 const { hasScore, holeState } = useHoleCompletion(players, scores)

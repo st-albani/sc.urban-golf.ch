@@ -127,6 +127,23 @@
 
           <p class="t-muted new-game__hint">{{ $t('Games.NewGame.SearchHint') }}</p>
         </div>
+
+        <!-- Sichtbarkeit: nur für eingeloggte Nutzer, und beim Bearbeiten nur
+             für den Ersteller. Default öffentlich. -->
+        <div v-if="canSetVisibility" class="new-game__group">
+          <label class="label-strong">{{ $t('Games.NewGame.Visibility.Label') }}</label>
+          <SegmentedControl
+            v-model="visibility"
+            :options="visibilityOptions"
+            :label="$t('Games.NewGame.Visibility.Label')"
+            block
+          />
+          <p class="t-muted new-game__hint">
+            {{ visibility === 'private'
+              ? $t('Games.NewGame.Visibility.PrivateHint')
+              : $t('Games.NewGame.Visibility.PublicHint') }}
+          </p>
+        </div>
       </section>
 
       <div class="new-game__cta">
@@ -157,9 +174,10 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { nanoid } from 'nanoid'
 import { useToast } from '@/composables/useToast'
-import { fetchGame, fetchGamePlayers, createOrUpdatePlayers, createOrUpdateGame, searchPlayers, type RegisteredPlayer } from '@/services/api'
-import { PlusIcon, TrashIcon, PlayIcon, CheckIcon, UserIcon, CheckBadgeIcon } from '@heroicons/vue/24/outline'
+import { fetchGame, fetchGamePlayers, createOrUpdatePlayers, createOrUpdateGame, searchPlayers, type RegisteredPlayer, type GameVisibility } from '@/services/api'
+import { PlusIcon, TrashIcon, PlayIcon, CheckIcon, UserIcon, CheckBadgeIcon, GlobeAltIcon, LockClosedIcon } from '@heroicons/vue/24/outline'
 import PlayerAvatar from '@/components/ui/PlayerAvatar.vue'
+import SegmentedControl from '@/components/ui/SegmentedControl.vue'
 import { useAuthStore } from '@/stores/auth'
 
 interface Row {
@@ -180,6 +198,17 @@ const gameName = ref('')
 const players = ref<Row[]>([{ id: nanoid(), name: '' }])
 const isEditing = computed(() => !!gameId.value)
 const isSaving = ref(false)
+
+// Sichtbarkeit: Default öffentlich. Beim Bearbeiten aus dem Spiel vorbelegt;
+// der Umschalter erscheint nur eingeloggt und (im Bearbeiten-Fall) nur für den
+// Ersteller — das Backend erzwingt beides zusätzlich serverseitig.
+const visibility = ref<GameVisibility>('public')
+const isOwner = ref(false)
+const canSetVisibility = computed(() => auth.isLoggedIn && (!isEditing.value || isOwner.value))
+const visibilityOptions = computed(() => [
+  { value: 'public' as const, label: t('Games.NewGame.Visibility.Public'), icon: GlobeAltIcon },
+  { value: 'private' as const, label: t('Games.NewGame.Visibility.Private'), icon: LockClosedIcon },
+])
 
 // Selbst-Markierung: ist der Nutzer eingeloggt mit kanonischer Identität,
 // wird die erste Zeile zur „Du"-Zeile — mit der stabilen Spieler-ID, damit
@@ -277,6 +306,8 @@ async function loadGame(id: string) {
   try {
     const game = await fetchGame(id)
     gameName.value = game?.name || ''
+    visibility.value = game?.visibility === 'private' ? 'private' : 'public'
+    isOwner.value = !!game?.is_owner
     const existing = await fetchGamePlayers(id)
     players.value = existing.map(p => ({ id: p.id, name: p.name, registered: p.registered, avatar: p.avatar }))
     if (players.value.length === 0) players.value = [{ id: nanoid(), name: '' }]
@@ -327,7 +358,13 @@ async function saveGame() {
     await createOrUpdatePlayers(validPlayers.map(p => ({ id: p.id, name: p.name })))
     const playerIds = validPlayers.map(p => p.id)
     const idToUse = isEditing.value ? gameId.value! : nanoid()
-    const game = await createOrUpdateGame({ id: idToUse, name: gameName.value, players: playerIds })
+    const game = await createOrUpdateGame({
+      id: idToUse,
+      name: gameName.value,
+      players: playerIds,
+      // Nur mitschicken, wenn der Nutzer die Sichtbarkeit überhaupt setzen darf.
+      ...(canSetVisibility.value ? { visibility: visibility.value } : {}),
+    })
 
     if (!game?.id) {
       showError(t('Games.NewGame.Errors.SaveFailed'))

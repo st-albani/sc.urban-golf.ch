@@ -183,6 +183,7 @@
   "Share": {
     "Title": "Spel delen",
     "EditWarning": "Iedereen met deze link kan scores invoeren.",
+    "EditWarningPrivate": "Dit spel is privé. Het staat niet in de openbare lijst — maar iedereen met deze link kan het openen en scores invoeren.",
     "LinkLabel": "Spellink",
     "Copy": "Link kopiëren",
     "Copied": "Gekopieerd!",
@@ -244,7 +245,8 @@
       "FilterMine": "Mijn",
       "NoMyGames": "Nog geen eigen spellen. Stel je weergavenaam in bij instellingen om eerdere rondes te koppelen.",
       "LoadMore": "Meer spellen laden",
-      "Loading": "Spellen worden geladen…"
+      "Loading": "Spellen worden geladen…",
+      "PrivateBadge": "Privé"
     },
     "NewGame": {
       "TitleNew": "Nieuw spel aanmaken",
@@ -263,6 +265,13 @@
       "Registered": "Geregistreerd",
       "SearchHint": "Tip: geregistreerde spelers worden voorgesteld terwijl je een naam typt.",
       "IdTag": "Kenmerk om spelers te onderscheiden",
+      "Visibility": {
+        "Label": "Zichtbaarheid",
+        "Public": "Openbaar",
+        "Private": "Privé",
+        "PublicHint": "Dit spel verschijnt in de openbare spellijst en in de zoekfunctie.",
+        "PrivateHint": "Alleen jij en geregistreerde spelers in dit spel zien het onder ‘Mijn spellen’. Het verschijnt niet in de openbare lijst."
+      },
       "Errors": {
         "GameAndPlayerRequired": "Voer een spelnaam en minimaal één speler in.",
         "SaveFailed": "Fout bij het opslaan van het spel.",
