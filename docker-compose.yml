@@ -22,6 +22,24 @@ services:
     depends_on:
       - backend
 
+  # One-shot: applies pending DB migrations, then exits. The backend waits for
+  # this to finish successfully before starting, so the schema is always current.
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-changeme}@postgres:5432/${POSTGRES_DB:-urban_golf}
+    command:
+      - sh
+      - -c
+      - node scripts/baseline-migrations.js && node node_modules/node-pg-migrate/bin/node-pg-migrate.js up --migration-file-language sql -m db/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   backend:
     build:
       context: .
@@ -37,6 +55,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   postgres:
     image: postgres:16-alpine

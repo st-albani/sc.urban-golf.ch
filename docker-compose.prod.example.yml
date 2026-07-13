@@ -34,6 +34,30 @@ services:
     depends_on:
       - backend
 
+  # One-shot migration job: brings the DB schema up to date, then exits.
+  # Uses the same backend image, only overriding the command. The backend
+  # waits for this to complete successfully (see its depends_on below).
+  migrate:
+    # Option 1: Use pre-built image from registry
+    # image: ghcr.io/yourusername/urbangolf-backend:latest
+
+    # Option 2: Build locally (comment out 'image' above)
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+    restart: "no"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    command:
+      - sh
+      - -c
+      - node scripts/baseline-migrations.js && node node_modules/node-pg-migrate/bin/node-pg-migrate.js up --migration-file-language sql -m db/migrations
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   backend:
     # Option 1: Use pre-built image from registry
     # image: ghcr.io/yourusername/urbangolf-backend:latest
@@ -55,6 +79,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   postgres:
     image: postgres:16-alpine
