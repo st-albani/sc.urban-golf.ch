@@ -19,11 +19,11 @@ export const usePWAUpdateStore = defineStore('pwaUpdate', () => {
   /**
    * Wendet das neue Service-Worker Paket an und lädt die App neu.
    *
-   * `vite-plugin-pwa`'s `updateSW(true)` macht den `skipWaiting`-Handshake
-   * mit dem wartenden SW; der interne Reload läuft aber nur zuverlässig wenn
-   * der `workbox-window`-Reload-Listener korrekt registriert ist. In unserer
-   * injectManifest-Konfiguration ist das zeitabhängig → wir forcieren den
-   * Reload als Safety Net selbst.
+   * `updateSW(true)` macht den `skipWaiting`-Handshake mit dem wartenden SW
+   * (Listener in `sw-custom.ts`). Danach lädt `virtual:pwa-register` die Seite
+   * nach dem `controllerchange` automatisch **einmal** neu. Ein zusätzlicher
+   * manueller Reload würde einen Doppel-Reload (kurz alte Seite) auslösen —
+   * deshalb reloaden wir nur, falls der Handshake wirft.
    */
   async function applyUpdate() {
     updateAvailable.value = false
@@ -31,9 +31,9 @@ export const usePWAUpdateStore = defineStore('pwaUpdate', () => {
       await updateFn.value?.(true)
     } catch (err) {
       console.warn('[PWA] updateSW(true) failed, reloading manually:', err)
-    }
-    if (typeof window !== 'undefined') {
-      try { window.location.reload() } catch { /* ignore — test env */ }
+      if (typeof window !== 'undefined') {
+        try { window.location.reload() } catch { /* ignore — test env */ }
+      }
     }
   }
 
