@@ -13,6 +13,16 @@ declare const self: ServiceWorkerGlobalScope & {
 cleanupOutdatedCaches()
 precacheAndRoute(self.__WB_MANIFEST)
 
+// updateSW(true) aus virtual:pwa-register postet {type:'SKIP_WAITING'} an den
+// wartenden Worker. Bei einem custom SW (injectManifest + registerType 'prompt')
+// wird der Listener NICHT automatisch injiziert — ohne ihn bleibt der neue SW
+// ewig "waiting" und der Update-Dialog kommt in einer Endlosschleife wieder.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting()
+  }
+})
+
 // SPA Navigation Fallback: alle Routen → index.html
 registerRoute(new NavigationRoute(createHandlerBoundToURL('index.html')))
 

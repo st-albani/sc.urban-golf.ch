@@ -23,6 +23,8 @@ services:
       - backend
 
   backend:
+    # Applies pending DB migrations on boot (see backend/docker-entrypoint.sh),
+    # then starts the API — the schema is always current on start.
     build:
       context: .
       dockerfile: backend/Dockerfile

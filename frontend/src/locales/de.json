@@ -122,7 +122,7 @@
   "Account": {
     "DataTitle": "Konto & Daten",
     "Email": "E-Mail",
-    "Names": "Zugeordnete Namen",
+    "Names": "Anzeigename",
     "Rounds": "Runden",
     "Delete": "Konto löschen",
     "DeleteConfirm": "Konto wirklich löschen? Das lässt sich nicht rückgängig machen.",
@@ -151,9 +151,8 @@
     "SignedIn": "Angemeldet 🎉",
     "DisplayNameLabel": "Anzeigename",
     "DisplayNamePlaceholder": "Dein Name",
-    "NameHint": "Wähle deinen Anzeigenamen — passende Runden werden automatisch dir zugeordnet.",
+    "NameHint": "Wähle deinen Anzeigenamen — so erscheinst du in deinen Runden.",
     "NameSaved": "Name gespeichert.",
-    "NameClaimed": "Name gespeichert · {count} Runden zugeordnet.",
     "MyStats": "Meine Statistik"
   },
   "Profile": {

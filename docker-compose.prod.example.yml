@@ -43,6 +43,8 @@ services:
       context: .
       dockerfile: backend/Dockerfile
 
+    # Applies pending DB migrations on boot (see backend/docker-entrypoint.sh),
+    # then starts the API — the schema is always current on start.
     restart: unless-stopped
     ports:
       - "3000:3000"

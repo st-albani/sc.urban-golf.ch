@@ -122,7 +122,7 @@
   "Account": {
     "DataTitle": "Compte & données",
     "Email": "E-mail",
-    "Names": "Noms associés",
+    "Names": "Nom affiché",
     "Rounds": "Parties",
     "Delete": "Supprimer le compte",
     "DeleteConfirm": "Supprimer vraiment ton compte ? Action irréversible.",
@@ -151,9 +151,8 @@
     "SignedIn": "Connecté 🎉",
     "DisplayNameLabel": "Nom affiché",
     "DisplayNamePlaceholder": "Ton nom",
-    "NameHint": "Choisis ton nom d'affichage — les parties correspondantes te sont attribuées automatiquement.",
+    "NameHint": "Choisis ton nom d'affichage — c'est ainsi que tu apparais dans tes parties.",
     "NameSaved": "Nom enregistré.",
-    "NameClaimed": "Nom enregistré · {count} parties associées.",
     "MyStats": "Mes statistiques"
   },
   "Profile": {
