@@ -376,16 +376,35 @@ describe('GET /games/:id', () => {
     expect(body.created_by).toBeUndefined()
   })
 
-  it('reports is_owner=false for anonymous access', async () => {
+  it('denies anonymous access to a private game (403)', async () => {
     createMockClient(() => ({
-      rows: [{ id: 'game1234567890', name: 'Owned', visibility: 'private', created_by: 'acc-1' }],
+      rows: [{ id: 'game1234567890', name: 'Owned', visibility: 'private', created_by: 'acc-1', is_participant: false }],
       rowCount: 1,
     }))
 
     const res = await app.inject({ method: 'GET', url: '/game1234567890' })
 
+    expect(res.statusCode).toBe(403)
+  })
+
+  it('allows a registered participant to access a private game', async () => {
+    createMockClient((sql) => {
+      if (sql.includes('FROM sessions')) {
+        return { rows: [{ id: 'acc-2', email: 'p@b.c', display_name: null, avatar: null }] }
+      }
+      // getGameAccess: fremder Account, aber Teilnehmer (is_participant true).
+      return { rows: [{ id: 'game1234567890', name: 'Shared', visibility: 'private', created_by: 'acc-1', is_participant: true }], rowCount: 1 }
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/game1234567890',
+      cookies: { ug_session: 'valid-token' },
+    })
+
     expect(res.statusCode).toBe(200)
     expect(res.json().is_owner).toBe(false)
+    expect(res.json().visibility).toBe('private')
   })
 
   it('returns 400 for invalid id', async () => {
@@ -436,5 +455,44 @@ describe('GET /games/:id/players', () => {
     })
 
     expect(res.statusCode).toBe(400)
+  })
+
+  it('denies players of a foreign private game (403)', async () => {
+    createMockClient((sql) => {
+      if (sql.includes('is_participant')) {
+        return { rows: [{ id: 'game1234567890', name: 'Secret', visibility: 'private', created_by: 'acc-1', is_participant: false }] }
+      }
+      return { rows: [] }
+    })
+
+    const res = await app.inject({ method: 'GET', url: '/game1234567890/players' })
+
+    expect(res.statusCode).toBe(403)
+  })
+
+  it('serves players of a private game to its owner', async () => {
+    const client = createMockClient((sql) => {
+      if (sql.includes('FROM sessions')) {
+        return { rows: [{ id: 'acc-1', email: 'o@b.c', display_name: null, avatar: null }] }
+      }
+      if (sql.includes('is_participant')) {
+        return { rows: [{ id: 'game1234567890', name: 'Mine', visibility: 'private', created_by: 'acc-1', is_participant: false }] }
+      }
+      if (sql.includes('AS registered')) {
+        return { rows: [{ id: 'canon-alice-01', name: 'Alice', registered: true, avatar: null }] }
+      }
+      return { rows: [] }
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/game1234567890/players',
+      cookies: { ug_session: 'valid-token' },
+    })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toHaveLength(1)
+    const playersCall = client.query.mock.calls.find((c) => c[0].includes('AS registered'))
+    expect(playersCall).toBeDefined()
   })
 })

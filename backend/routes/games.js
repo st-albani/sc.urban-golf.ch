@@ -1,6 +1,7 @@
-import { query, queryOne, transaction } from '../db/pg.js';
+import { query, transaction } from '../db/pg.js';
 import { schemas, isValidId } from '@urban-golf/contract';
 import { getAccountFromRequest } from '../utils/auth.js';
+import { getGameAccess } from '../utils/gameAccess.js';
 
 /**
  * SQL-Fragment: ein Spiel `g` ist sichtbar, wenn es öffentlich ist ODER der
@@ -153,19 +154,18 @@ export default async function (fastify, _opts) {
     const gameId = req.params.id;
     if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });
 
-    // Phase 1 (ungelistet): der Direktzugriff bleibt offen — visibility und ein
-    // is_owner-Flag werden mitgeliefert, damit das UI private Runden kennzeichnen
-    // und den Sichtbarkeits-Umschalter nur dem Ersteller anbieten kann. Die
-    // created_by-UUID selbst wird nicht nach aussen gegeben.
+    // Phase 2 (Zugriffsschutz): private Spiele nur für Ersteller/Teilnehmer.
+    // visibility und is_owner werden mitgeliefert, damit das UI private Runden
+    // kennzeichnen kann; die created_by-UUID bleibt intern.
     const account = await getAccountFromRequest(req);
-    const me = account?.id ?? null;
-    const game = await queryOne(`SELECT id, name, visibility, created_by FROM games WHERE id = $1`, [gameId]);
-    if (!game) return reply.code(404).send({ error: 'Not found' });
+    const access = await getGameAccess(gameId, account?.id ?? null);
+    if (!access.exists) return reply.code(404).send({ error: 'Not found' });
+    if (!access.allowed) return reply.code(403).send({ error: 'forbidden' });
     reply.send({
-      id: game.id,
-      name: game.name,
-      visibility: game.visibility,
-      is_owner: me != null && game.created_by === me,
+      id: gameId,
+      name: access.name,
+      visibility: access.visibility,
+      is_owner: access.isOwner,
     });
   });
 
@@ -173,6 +173,12 @@ export default async function (fastify, _opts) {
   fastify.get('/:id/players', async (req, reply) => {
     const gameId = req.params.id;
     if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });
+
+    // Gleicher Zugriffsschutz wie beim Spiel selbst.
+    const account = await getAccountFromRequest(req);
+    const access = await getGameAccess(gameId, account?.id ?? null);
+    if (!access.exists) return reply.code(404).send({ error: 'Not found' });
+    if (!access.allowed) return reply.code(403).send({ error: 'forbidden' });
 
     const rows = await query(
       // registered/avatar: markiert kanonische (Konto-)Identitäten, damit die

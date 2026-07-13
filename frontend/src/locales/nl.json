@@ -183,7 +183,7 @@
   "Share": {
     "Title": "Spel delen",
     "EditWarning": "Iedereen met deze link kan scores invoeren.",
-    "EditWarningPrivate": "Dit spel is privé. Het staat niet in de openbare lijst — maar iedereen met deze link kan het openen en scores invoeren.",
+    "EditWarningPrivate": "Dit spel is privé. Alleen jij en ingelogde spelers in dit spel kunnen het openen en scores invoeren.",
     "LinkLabel": "Spellink",
     "Copy": "Link kopiëren",
     "Copied": "Gekopieerd!",

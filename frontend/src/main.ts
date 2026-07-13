@@ -49,9 +49,11 @@ axios.interceptors.response.use(
     const config = error.config
     if (!config) return Promise.reject(error)
 
-    // 4xx: no retry, show toast (except 401)
+    // 4xx: no retry, show toast (except 401/403). 403 ist ein erwartetes
+    // „kein Zugriff" (private Spiele) und wird von der jeweiligen View über
+    // ihren Fehlerzustand behandelt — kein Toast (sonst spammt das Polling).
     if (error.response?.status >= 400 && error.response?.status < 500) {
-      if (error.response.status !== 401) {
+      if (error.response.status !== 401 && error.response.status !== 403) {
         const { error: showError } = useToast()
         showError(`${t('Errors.RequestFailed')} (${error.response.status})`)
       }

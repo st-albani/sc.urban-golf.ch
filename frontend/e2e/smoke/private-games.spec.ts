@@ -51,6 +51,19 @@ test.describe('Private Spiele (Smoke)', () => {
     await expect(item.locator('.mine__badge')).toHaveText(/Privat/)
   })
 
+  test('die Teilen-Ansicht kommuniziert die Zugriffs-Einschränkung (Phase 2)', async ({ page, mockApi }) => {
+    void mockApi
+    await signIn(page)
+    await createPrivateGame(page, 'Teilen-Privat-Runde')
+
+    // Vom Loch-View in die Detail-Ansicht wechseln und Teilen öffnen.
+    const gameId = new URL(page.url()).pathname.split('/')[2]
+    await page.goto(`/games/${gameId}`)
+    await page.getByRole('button', { name: 'Spiel teilen' }).click()
+
+    await expect(page.locator('.share__notice')).toContainText('Nur du und angemeldete Mitspieler')
+  })
+
   test('anonym ist das private Spiel nicht in „Alle", öffentliche schon', async ({ page, mockApi }) => {
     void mockApi
     await signIn(page)

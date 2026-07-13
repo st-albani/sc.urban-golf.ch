@@ -183,7 +183,7 @@
   "Share": {
     "Title": "Spiel teilen",
     "EditWarning": "Jeder mit diesem Link kann Scores eintragen.",
-    "EditWarningPrivate": "Dieses Spiel ist privat. Es ist nicht öffentlich gelistet — aber wer diesen Link hat, kann es öffnen und Scores eintragen.",
+    "EditWarningPrivate": "Dieses Spiel ist privat. Nur du und angemeldete Mitspieler können es öffnen und Scores eintragen.",
     "LinkLabel": "Spiel-Link",
     "Copy": "Link kopieren",
     "Copied": "Kopiert!",

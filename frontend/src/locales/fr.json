@@ -183,7 +183,7 @@
   "Share": {
     "Title": "Partager la partie",
     "EditWarning": "Toute personne disposant de ce lien peut saisir des scores.",
-    "EditWarningPrivate": "Cette partie est privée. Elle n’apparaît pas dans la liste publique — mais toute personne disposant de ce lien peut l’ouvrir et saisir des scores.",
+    "EditWarningPrivate": "Cette partie est privée. Seuls toi et les joueurs connectés de cette partie peuvent l’ouvrir et saisir des scores.",
     "LinkLabel": "Lien de la partie",
     "Copy": "Copier le lien",
     "Copied": "Copié !",

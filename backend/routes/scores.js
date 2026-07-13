@@ -1,5 +1,7 @@
 import { query } from '../db/pg.js';
 import { schemas } from '@urban-golf/contract';
+import { getAccountFromRequest } from '../utils/auth.js';
+import { getGameAccess } from '../utils/gameAccess.js';
 
 export default async function (fastify, _opts) {
   fastify.get('/', {
@@ -12,6 +14,12 @@ export default async function (fastify, _opts) {
     },
   }, async (req, reply) => {
     const { game_id: gameId } = req.query;
+
+    // Phase-2-Zugriffsschutz: Scores privater Spiele nur für Ersteller/Teilnehmer.
+    const account = await getAccountFromRequest(req);
+    const access = await getGameAccess(gameId, account?.id ?? null);
+    if (!access.exists) return reply.code(404).send({ error: 'Not found' });
+    if (!access.allowed) return reply.code(403).send({ error: 'forbidden' });
 
     const rows = await query(
       `SELECT s.*, p.name as player_name FROM scores s
@@ -33,6 +41,13 @@ export default async function (fastify, _opts) {
     },
   }, async (req, reply) => {
     const { game_id, player_id, strokes, hole } = req.body;
+
+    // Scores privater Spiele nur von Ersteller/Teilnehmern (kein anonymes
+    // Scoren per geteiltem Link mehr — bewusste Phase-2-Semantik).
+    const account = await getAccountFromRequest(req);
+    const access = await getGameAccess(game_id, account?.id ?? null);
+    if (!access.exists) return reply.code(404).send({ error: 'Not found' });
+    if (!access.allowed) return reply.code(403).send({ error: 'forbidden' });
 
     const rows = await query(
       `INSERT INTO scores (game_id, player_id, hole, strokes)
