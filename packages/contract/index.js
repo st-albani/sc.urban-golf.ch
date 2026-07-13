@@ -42,6 +42,7 @@ const gameRowSchema = {
     id: idSchema,
     name: { type: 'string' },
     created_at: { type: ['string', 'null'] },
+    visibility: { type: 'string', enum: ['public', 'private'] },
   },
 };
 
@@ -110,6 +111,9 @@ export const schemas = Object.freeze({
           maxItems: VALIDATION.PLAYERS_MAX,
           items: idSchema,
         },
+        // Sichtbarkeit — nur für eingeloggte Ersteller wirksam; serverseitig
+        // wird sie für anonyme Requests auf 'public' gezwungen.
+        visibility: { type: 'string', enum: ['public', 'private'] },
       },
       additionalProperties: false,
     },

@@ -1,5 +1,5 @@
 import type { InjectionKey, Ref } from 'vue'
-import type { Player } from '@/services/api'
+import type { Player, GameVisibility } from '@/services/api'
 
 export type ScoreMap = { [playerId: string]: { [hole: number]: number | string } }
 
@@ -8,6 +8,7 @@ export interface GamesDetailContext {
   scores: Ref<ScoreMap>
   holes: Ref<number[]>
   gameName: Ref<string>
+  visibility: Ref<GameVisibility>
   error: Ref<string | null>
   load: () => Promise<void>
   /**

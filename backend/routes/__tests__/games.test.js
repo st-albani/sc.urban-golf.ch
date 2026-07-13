@@ -124,6 +124,76 @@ describe('POST /games', () => {
     expect(sessionCall).toBeUndefined()
   })
 
+  it('persists visibility=private for a logged-in creator', async () => {
+    const client = createMockClient((sql) => {
+      if (sql.includes('FROM sessions')) {
+        return { rows: [{ id: 'acc-owner-1', email: 'owner@example.com', display_name: null, avatar: null }] }
+      }
+      if (sql.includes('INSERT INTO games')) {
+        return { rows: [{ id: 'game1234567890', name: 'Private Game', visibility: 'private' }] }
+      }
+      return { rows: [] }
+    })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/',
+      cookies: { ug_session: 'valid-token' },
+      payload: {
+        id: 'game1234567890',
+        name: 'Private Game',
+        players: ['player1234567890'],
+        visibility: 'private',
+      },
+    })
+
+    expect(res.statusCode).toBe(200)
+    // visibility ist der vierte Parameter des INSERT.
+    expect(gamesInsertParams(client)?.[3]).toBe('private')
+    // Die Sichtbarkeitsänderung ist ownership-gebunden (CASE im UPSERT).
+    const insertCall = client.query.mock.calls.find((c) => c[0].includes('INSERT INTO games'))
+    expect(insertCall[0]).toContain('games.created_by = $3')
+  })
+
+  it('forces visibility=public for anonymous creation', async () => {
+    const client = createMockClient((sql) => {
+      if (sql.includes('INSERT INTO games')) {
+        return { rows: [{ id: 'game1234567890', name: 'Anon Game', visibility: 'public' }] }
+      }
+      return { rows: [] }
+    })
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/',
+      payload: {
+        id: 'game1234567890',
+        name: 'Anon Game',
+        players: ['player1234567890'],
+        visibility: 'private',
+      },
+    })
+
+    expect(res.statusCode).toBe(200)
+    // Ohne Session bleibt das Spiel öffentlich, obwohl 'private' gewünscht wurde.
+    expect(gamesInsertParams(client)?.[3]).toBe('public')
+  })
+
+  it('rejects an invalid visibility value', async () => {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/',
+      payload: {
+        id: 'game1234567890',
+        name: 'Bad Vis',
+        players: ['player1234567890'],
+        visibility: 'secret',
+      },
+    })
+
+    expect(res.statusCode).toBe(400)
+  })
+
   it('returns 400 for invalid body', async () => {
     const res = await app.inject({
       method: 'POST',
@@ -196,6 +266,57 @@ describe('GET /games', () => {
     expect(searchCall).toBeDefined()
     expect(searchCall[1]).toContain('%alpha%')
   })
+
+  it('hides private games from anonymous requests (guard, me=null)', async () => {
+    const client = createMockClient((sql) => {
+      if (sql.includes('COUNT')) return { rows: [{ count: '2' }] }
+      return { rows: [{ id: 'g1', name: 'Public Game', visibility: 'public' }] }
+    })
+
+    const res = await app.inject({ method: 'GET', url: '/?page=1&per_page=4' })
+
+    expect(res.statusCode).toBe(200)
+    const listCall = client.query.mock.calls.find((c) => c[0].includes('FROM games g') && !c[0].includes('COUNT'))
+    // Der Guard schränkt anonym auf öffentliche Spiele ein; me (Param 1) ist null.
+    expect(listCall[0]).toContain("g.visibility = 'public'")
+    expect(listCall[1][0]).toBeNull()
+  })
+
+  it('scopes the guard to the account for a logged-in request', async () => {
+    const client = createMockClient((sql) => {
+      if (sql.includes('FROM sessions')) {
+        return { rows: [{ id: 'acc-1', email: 'a@b.c', display_name: null, avatar: null }] }
+      }
+      if (sql.includes('COUNT')) return { rows: [{ count: '3' }] }
+      return { rows: [{ id: 'g1', name: 'Mine', visibility: 'private' }] }
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/?page=1&per_page=4',
+      cookies: { ug_session: 'valid-token' },
+    })
+
+    expect(res.statusCode).toBe(200)
+    const listCall = client.query.mock.calls.find((c) => c[0].includes('FROM games g') && !c[0].includes('COUNT'))
+    // me (Param 1) trägt die Account-ID, damit eigene/teilnehmende private Spiele sichtbar werden.
+    expect(listCall[1][0]).toBe('acc-1')
+    expect(listCall[0]).toContain('account_players')
+  })
+
+  it('applies the guard together with the search filter', async () => {
+    const client = createMockClient(() => ({ rows: [{ count: '0' }] }))
+
+    await app.inject({ method: 'GET', url: '/?search=alpha' })
+
+    const listCall = client.query.mock.calls.find(
+      (c) => c[0].includes('ILIKE') && c[0].includes('FROM games g') && !c[0].includes('COUNT'),
+    )
+    // Guard UND Suche greifen zusammen (privates Spiel nicht über Spielername auffindbar).
+    expect(listCall[0]).toContain("g.visibility = 'public'")
+    expect(listCall[0]).toContain('ILIKE')
+    expect(listCall[1]).toContain('%alpha%')
+  })
 })
 
 describe('GET /games/:id', () => {
@@ -232,6 +353,39 @@ describe('GET /games/:id', () => {
     })
 
     expect(res.statusCode).toBe(404)
+  })
+
+  it('flags is_owner for the creator and never leaks created_by', async () => {
+    createMockClient((sql) => {
+      if (sql.includes('FROM sessions')) {
+        return { rows: [{ id: 'acc-1', email: 'a@b.c', display_name: null, avatar: null }] }
+      }
+      return { rows: [{ id: 'game1234567890', name: 'Owned', visibility: 'private', created_by: 'acc-1' }], rowCount: 1 }
+    })
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/game1234567890',
+      cookies: { ug_session: 'valid-token' },
+    })
+
+    expect(res.statusCode).toBe(200)
+    const body = res.json()
+    expect(body.is_owner).toBe(true)
+    expect(body.visibility).toBe('private')
+    expect(body.created_by).toBeUndefined()
+  })
+
+  it('reports is_owner=false for anonymous access', async () => {
+    createMockClient(() => ({
+      rows: [{ id: 'game1234567890', name: 'Owned', visibility: 'private', created_by: 'acc-1' }],
+      rowCount: 1,
+    }))
+
+    const res = await app.inject({ method: 'GET', url: '/game1234567890' })
+
+    expect(res.statusCode).toBe(200)
+    expect(res.json().is_owner).toBe(false)
   })
 
   it('returns 400 for invalid id', async () => {

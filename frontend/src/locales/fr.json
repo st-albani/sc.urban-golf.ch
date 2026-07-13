@@ -183,6 +183,7 @@
   "Share": {
     "Title": "Partager la partie",
     "EditWarning": "Toute personne disposant de ce lien peut saisir des scores.",
+    "EditWarningPrivate": "Cette partie est privée. Elle n’apparaît pas dans la liste publique — mais toute personne disposant de ce lien peut l’ouvrir et saisir des scores.",
     "LinkLabel": "Lien de la partie",
     "Copy": "Copier le lien",
     "Copied": "Copié !",
@@ -244,7 +245,8 @@
       "FilterMine": "À moi",
       "NoMyGames": "Pas encore de parties à toi. Définis ton nom affiché dans les paramètres pour associer tes parties passées.",
       "LoadMore": "Charger d'autres jeux",
-      "Loading": "Chargement des parties…"
+      "Loading": "Chargement des parties…",
+      "PrivateBadge": "Privé"
     },
     "NewGame": {
       "TitleNew": "Créer une nouvelle partie",
@@ -263,6 +265,13 @@
       "Registered": "Enregistré",
       "SearchHint": "Astuce : les joueurs enregistrés sont suggérés au fil de la saisie.",
       "IdTag": "Identifiant pour distinguer les joueurs",
+      "Visibility": {
+        "Label": "Visibilité",
+        "Public": "Publique",
+        "Private": "Privée",
+        "PublicHint": "Cette partie apparaît dans la liste publique des parties et dans la recherche.",
+        "PrivateHint": "Seuls toi et les joueurs enregistrés de cette partie la voient sous « Mes parties ». Elle n’apparaît pas dans la liste publique."
+      },
       "Errors": {
         "GameAndPlayerRequired": "Veuillez saisir un nom de partie et au moins un joueur.",
         "SaveFailed": "Échec de l'enregistrement de la partie.",

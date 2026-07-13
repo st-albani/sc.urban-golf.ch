@@ -183,6 +183,7 @@
   "Share": {
     "Title": "Spiel teilen",
     "EditWarning": "Jeder mit diesem Link kann Scores eintragen.",
+    "EditWarningPrivate": "Dieses Spiel ist privat. Es ist nicht öffentlich gelistet — aber wer diesen Link hat, kann es öffnen und Scores eintragen.",
     "LinkLabel": "Spiel-Link",
     "Copy": "Link kopieren",
     "Copied": "Kopiert!",
@@ -244,7 +245,8 @@
       "FilterMine": "Meine",
       "NoMyGames": "Noch keine eigenen Spiele. Setze in den Einstellungen deinen Anzeigenamen, um vergangene Runden zuzuordnen.",
       "LoadMore": "Weitere Spiele laden",
-      "Loading": "Spiele werden geladen…"
+      "Loading": "Spiele werden geladen…",
+      "PrivateBadge": "Privat"
     },
     "NewGame": {
       "TitleNew": "Neues Spiel erstellen",
@@ -263,6 +265,13 @@
       "Registered": "Registriert",
       "SearchHint": "Tipp: Beim Tippen eines Namens werden registrierte Spieler vorgeschlagen.",
       "IdTag": "Kennung zur Unterscheidung",
+      "Visibility": {
+        "Label": "Sichtbarkeit",
+        "Public": "Öffentlich",
+        "Private": "Privat",
+        "PublicHint": "Dieses Spiel erscheint in der öffentlichen Spielliste und in der Suche.",
+        "PrivateHint": "Nur du und registrierte Mitspieler sehen dieses Spiel unter „Meine Spiele“. Es erscheint nicht in der öffentlichen Liste."
+      },
       "Errors": {
         "GameAndPlayerRequired": "Bitte Spielname und mindestens einen Spieler angeben.",
         "SaveFailed": "Fehler beim Speichern des Spiels.",

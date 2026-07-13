@@ -82,7 +82,9 @@ CREATE TABLE public.games (
     id text NOT NULL,
     name text NOT NULL,
     created_at timestamptz DEFAULT now(),
-    created_by uuid
+    created_by uuid,
+    visibility text NOT NULL DEFAULT 'public',
+    CONSTRAINT games_visibility_check CHECK (visibility IN ('public', 'private'))
 );
 
 --

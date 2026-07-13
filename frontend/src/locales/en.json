@@ -183,6 +183,7 @@
   "Share": {
     "Title": "Share game",
     "EditWarning": "Anyone with this link can enter scores.",
+    "EditWarningPrivate": "This game is private. It is not publicly listed — but anyone with this link can open it and enter scores.",
     "LinkLabel": "Game link",
     "Copy": "Copy link",
     "Copied": "Copied!",
@@ -244,7 +245,8 @@
       "FilterMine": "Mine",
       "NoMyGames": "No games of your own yet. Set your display name in settings to link past rounds.",
       "LoadMore": "Load more games",
-      "Loading": "Loading games…"
+      "Loading": "Loading games…",
+      "PrivateBadge": "Private"
     },
     "NewGame": {
       "TitleNew": "Create New Game",
@@ -263,6 +265,13 @@
       "Registered": "Registered",
       "SearchHint": "Tip: registered players are suggested as you type a name.",
       "IdTag": "Identifier to tell players apart",
+      "Visibility": {
+        "Label": "Visibility",
+        "Public": "Public",
+        "Private": "Private",
+        "PublicHint": "This game appears in the public games list and in search.",
+        "PrivateHint": "Only you and registered players in this game see it under “My games”. It does not appear in the public list."
+      },
       "Errors": {
         "GameAndPlayerRequired": "Please enter a game name and at least one player.",
         "SaveFailed": "Failed to save the game.",

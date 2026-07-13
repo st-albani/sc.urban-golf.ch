@@ -46,7 +46,8 @@ const emit = defineEmits<{ 'update:modelValue': [value: T] }>()
 .segmented {
   display: inline-flex;
   padding: 0.25rem;
-  background: color-mix(in oklab, var(--text-default) 8%, transparent);
+  background: color-mix(in oklab, var(--text-default) 10%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--text-default) 6%, transparent);
   border-radius: var(--radius-pill);
   gap: 0.15rem;
   max-width: 100%;
@@ -72,20 +73,23 @@ const emit = defineEmits<{ 'update:modelValue': [value: T] }>()
   /* Tap-Target min 44 px für WCAG 2.5.5 */
   min-height: 2.75rem;
   border-radius: var(--radius-pill);
-  border: 0;
+  border: 1px solid transparent;
   background: transparent;
   color: var(--text-muted);
   font-size: var(--text-sm);
   font-weight: 600;
-  transition: color 150ms, background 200ms var(--ease-standard), box-shadow 150ms;
+  transition: color 150ms, background 200ms var(--ease-standard), box-shadow 150ms, border-color 150ms;
   min-width: 0;
 }
 .segmented__item:hover { color: var(--text-strong); }
 
 .segmented__item.is-active {
-  background: var(--card-bg);
+  /* Leichter Helligkeits-Lift über --card-bg: im Dark-Mode (text-default hell)
+     hebt sich die Kachel klarer vom Track ab, im Light-Mode praktisch neutral. */
+  background: color-mix(in oklab, var(--text-default) 5%, var(--card-bg));
   color: var(--text-strong);
-  box-shadow: var(--shadow-elev-1);
+  border-color: color-mix(in oklab, var(--text-default) 22%, transparent);
+  box-shadow: var(--card-shadow);
 }
 
 .segmented__icon {

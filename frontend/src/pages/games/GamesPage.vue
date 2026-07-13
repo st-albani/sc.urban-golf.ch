@@ -65,7 +65,7 @@
           <ScoreCard />
         </template>
 
-        <ShareGameSheet v-model="shareOpen" :game-id="gameId" :game-name="gameName" />
+        <ShareGameSheet v-model="shareOpen" :game-id="gameId" :game-name="gameName" :private="visibility === 'private'" />
       </div>
     </template>
   </DefaultLayout>
@@ -105,10 +105,10 @@ const isHoleView = computed(() => 'holeId' in route.params)
 // Read-only-Zuschauer: ?spectator blendet alle Schreib-Einstiege aus.
 const isSpectator = computed(() => route.query.spectator !== undefined)
 
-const { players, scores, holes, gameName, error, load: loadGamesDetailData } = useGamesDetailData(gameId)
+const { players, scores, holes, gameName, visibility, error, load: loadGamesDetailData } = useGamesDetailData(gameId)
 const lockedScores = ref<Set<string>>(new Set())
 
-provide(gamesDetailKey, { players, scores, holes, gameName, error, load: loadGamesDetailData, lockedScores })
+provide(gamesDetailKey, { players, scores, holes, gameName, visibility, error, load: loadGamesDetailData, lockedScores })
 
 const { holeState } = useHoleCompletion(players, scores)
 

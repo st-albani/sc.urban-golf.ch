@@ -26,10 +26,17 @@ export interface PlayerWithStats extends Player {
   total: number | null
 }
 
+export type GameVisibility = 'public' | 'private'
+
 export interface Game {
   id: string
   name: string
   created_at?: string
+  // Sichtbarkeit — nur eingeloggte Ersteller können 'private' setzen.
+  visibility?: GameVisibility
+  // Nur bei GET /games/:id: ist der anfragende Account der Ersteller?
+  // (Steuert, ob der Sichtbarkeits-Umschalter beim Bearbeiten angeboten wird.)
+  is_owner?: boolean
 }
 
 export interface GameSummary extends Game {
@@ -96,6 +103,7 @@ export async function createOrUpdateGame(payload: {
   id: string
   name: string
   players: string[]
+  visibility?: GameVisibility
 }): Promise<Game & { status: string }> {
   const { data } = await axios.post(API_ROUTES.GAMES, payload)
   return data

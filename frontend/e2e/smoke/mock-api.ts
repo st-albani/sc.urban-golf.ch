@@ -13,6 +13,7 @@ export interface MockGame {
   id: string
   name: string
   created_at: string
+  visibility?: 'public' | 'private'
 }
 
 export interface MockScore {
@@ -63,10 +64,16 @@ export function defaultDataset(): MockDataset {
   }
 }
 
-/** Baut die /games/summary-Response. */
-function buildSummary(data: MockDataset) {
+/**
+ * Baut die /games/summary-Response. Spiegelt den Sichtbarkeits-Guard des
+ * Backends: private Spiele erscheinen nur, wenn die Session eingeloggt ist
+ * (im Mock ein Account ≈ Ersteller/Teilnehmer). Anonym werden sie ausgeblendet.
+ */
+function buildSummary(data: MockDataset, isAuthed = false) {
   return {
-    games: data.games.map((g) => {
+    games: data.games
+      .filter((g) => g.visibility !== 'private' || isAuthed)
+      .map((g) => {
       const playerIds = data.gamePlayers[g.id] || []
       const players = playerIds.map((pid) => {
         const p = data.players.find((pp) => pp.id === pid)!
@@ -90,31 +97,34 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
 
   // Spiele, die während der Session eingeloggt erstellt wurden (created_by).
   // Fließen zusätzlich in „Meine Spiele" ein — spiegelt das Ownership-Modell.
-  const createdByMe: Array<{ id: string; name: string; created_at: string; players: unknown[]; holes: number[] }> = []
+  const createdByMe: Array<{ id: string; name: string; created_at: string; players: unknown[]; holes: number[]; visibility?: 'public' | 'private' }> = []
 
   await page.route('**/api/games/summary**', (route) => {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(buildSummary(state)),
+      body: JSON.stringify(buildSummary(state, !!authState.account)),
     })
   })
 
   await page.route('**/api/games', async (route: Route) => {
     if (route.request().method() === 'POST') {
       const payload = JSON.parse(route.request().postData() || '{}') as {
-        id: string; name: string; players: string[]
+        id: string; name: string; players: string[]; visibility?: 'public' | 'private'
       }
+      // Wie im Backend: 'private' nur für eingeloggte Ersteller, sonst 'public'.
+      const visibility = authState.account && payload.visibility === 'private' ? 'private' : 'public'
       const game: MockGame = {
         id: payload.id,
         name: payload.name,
         created_at: new Date().toISOString(),
+        visibility,
       }
       state.games.push(game)
       state.gamePlayers[game.id] = payload.players
       // Ist die Session eingeloggt, gilt der Ersteller (created_by) → „Meine Spiele".
       if (authState.account) {
-        createdByMe.unshift({ id: game.id, name: game.name, created_at: game.created_at, players: [], holes: [] })
+        createdByMe.unshift({ id: game.id, name: game.name, created_at: game.created_at, players: [], holes: [], visibility })
       }
       return route.fulfill({
         status: 200,
