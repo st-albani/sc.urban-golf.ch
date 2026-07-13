@@ -68,7 +68,10 @@
 
 @layer components {
   .app-shell {
-    min-height: 100dvh;
+    /* 100% statt 100dvh: matcht die definite Höhe von #app exakt. Mit 100dvh
+       überragt die Shell auf echten Android-PWAs (Safe-Area) das #app um wenige
+       px → minimaler vertikaler Scroll, der im Emulator nicht auftritt. */
+    min-height: 100%;
     display: flex;
     flex-direction: column;
     position: relative;
