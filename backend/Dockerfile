@@ -31,7 +31,10 @@ RUN chown -R nodejs:nodejs /app
 USER nodejs
 
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
   CMD node -e "require('http').get('http://localhost:3000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["node", "app.js"]
+# Migrate-on-boot: der Entrypoint wendet offene Migrations an und startet
+# danach die App (exec → Signale gehen an node). Über `sh` aufgerufen, damit
+# das +x-Bit egal ist (Windows-Host-Bind-Mounts in dev setzen es nicht).
+ENTRYPOINT ["sh", "./docker-entrypoint.sh"]
