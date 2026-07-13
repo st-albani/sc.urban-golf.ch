@@ -59,14 +59,17 @@
               </div>
               <div v-else class="new-game__input-wrap">
                 <input
+                  :ref="(el) => setInputRef(player.id, el)"
                   type="text"
                   v-model="player.name"
                   :placeholder="$t('Games.NewGame.PlayerNamePlaceholder')"
                   maxlength="30"
                   class="field new-game__player-input"
                   autocomplete="off"
+                  enterkeyhint="next"
                   @focus="onNameFocus(player)"
                   @input="onNameInput(player)"
+                  @keydown.enter.prevent="onNameEnter(player)"
                 />
                 <ul v-if="searchRowId === player.id && suggestions.length" class="new-game__suggest">
                   <li v-for="r in suggestions" :key="r.id">
@@ -169,7 +172,7 @@
 <script setup lang="ts">
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AppButton from '@/components/ui/AppButton.vue'
-import { ref, computed, watch, watchEffect, onMounted } from 'vue'
+import { ref, computed, watch, watchEffect, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { nanoid } from 'nanoid'
@@ -321,10 +324,42 @@ watchEffect(async () => {
   if (gameId.value) await loadGame(gameId.value)
 })
 
-function addPlayer() {
-  if (players.value.length < 10) {
-    players.value.push({ id: nanoid(), name: '' })
+// Fokus-Steuerung: pro Freitext-Zeile das Input-Element merken, damit eine
+// neu erzeugte Zeile direkt fokussiert werden kann (spart den zweiten Tap).
+const inputRefs = new Map<string, HTMLInputElement>()
+function setInputRef(id: string, el: unknown) {
+  if (el) inputRefs.set(id, el as HTMLInputElement)
+  else inputRefs.delete(id)
+}
+function focusRow(id: string) {
+  inputRefs.get(id)?.focus()
+}
+
+async function addPlayer() {
+  if (players.value.length >= 10) return
+  const row: Row = { id: nanoid(), name: '' }
+  players.value.push(row)
+  await nextTick()
+  focusRow(row.id)
+}
+
+// Enter in einer Namenszeile: zur nächsten Zeile springen, oder — auf der
+// letzten Zeile mit Inhalt — eine neue anhängen. Macht die Eingabe zum reinen
+// Tipp-Flow (Name → Enter → Name → Enter) ohne den Button anzusteuern.
+function onNameEnter(row: Row) {
+  suggestions.value = []
+  searchRowId.value = null
+  const idx = players.value.findIndex(p => p.id === row.id)
+  if (idx === -1) return
+  // Nächste fokussierbare Freitext-Zeile suchen (Du-/registrierte Zeilen
+  // haben kein Eingabefeld und werden übersprungen).
+  const next = players.value.slice(idx + 1).find(p => inputRefs.has(p.id))
+  if (next) {
+    focusRow(next.id)
+    return
   }
+  if (!row.name.trim() || players.value.length >= 10) return
+  addPlayer()
 }
 
 function removePlayer(id: string) {
