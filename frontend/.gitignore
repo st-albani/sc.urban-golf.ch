@@ -25,6 +25,7 @@ coverage/
 .nyc_output
 
 # Playwright
+/test-results/
 /e2e/test-results/
 /e2e/test-results-smoke/
 /e2e/screenshots/
