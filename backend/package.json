@@ -17,7 +17,6 @@
     "migrate:create": "node --env-file-if-exists=../.env --env-file-if-exists=./.env ../node_modules/node-pg-migrate/bin/node-pg-migrate.js create --migration-file-language sql -m db/migrations"
   },
   "dependencies": {
-    "@fastify/compress": "^8.3.1",
     "@fastify/cookie": "^11.1.2",
     "@fastify/cors": "^11.3.0",
     "@fastify/helmet": "^13.1.0",

@@ -12,7 +12,7 @@ Fastify 5 Backend, vollständig in Docker containerisierbar, Offline-fähig.
 ## Tech-Stack auf einen Blick
 
 - **Frontend**: Vue 3.4 + Vite 8 + TypeScript + Tailwind v4 + Pinia 3 + Vue-Router 5 + vue-i18n 11 + vite-plugin-pwa 1
-- **Backend**: Fastify 5 + pg (nativer PostgreSQL-Client) + @fastify/compress
+- **Backend**: Fastify 5 + pg (nativer PostgreSQL-Client)
 - **DB**: PostgreSQL 16 (Alpine) — Schema in [backend/db/init/schema.sql](backend/db/init/schema.sql)
 - **Tests**: Vitest (Unit) + Playwright Smoke-Suite mit Mock-API. Backend-Contract-Tests geplant — siehe [.claude/plans/backend-contract-tests.md](.claude/plans/backend-contract-tests.md).
 - **Infra**: Docker + Nginx (statische Auslieferung Frontend) + Traefik-ready, GitHub Actions CI/CD

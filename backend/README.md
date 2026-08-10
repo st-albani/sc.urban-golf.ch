@@ -19,15 +19,42 @@ npm run dev                                                   # http://localhost
 
 | Bereich | Version / Library |
 | --- | --- |
-| Runtime | Node.js 20+ (ESM) |
+| Runtime | Node.js 24 LTS (ESM) |
 | Framework | Fastify 5 |
 | DB | PostgreSQL 16 via `pg` (nativer Client, kein ORM) |
-| Migrations | node-pg-migrate 8 (SQL-Files) |
+| Migrations | node-pg-migrate 9 (SQL-Files, vorwärts-only) |
 | Security | @fastify/helmet, @fastify/cors, @fastify/rate-limit |
-| Compression | @fastify/compress (gzip + brotli) |
+| Compression | keine — API-Antworten gehen unkomprimiert raus (siehe unten) |
 | Mail | nodemailer (Brevo/SMTP für Feedback) |
 | Tests | Vitest 4 |
 | Lint | ESLint 10 |
+
+### Zur Kompression
+
+Die Tabelle führte hier lange `@fastify/compress` — das Paket war zwar als
+Abhängigkeit deklariert, wurde aber nie in `app.js` registriert. API-Antworten
+waren also durchgehend unkomprimiert, entgegen der Doku.
+
+Nachträglich zu registrieren scheitert an einem Zusammenspiel von
+`@fastify/compress` und dem Handler-Stil dieser Codebasis: Ruft ein
+async-Handler `reply.send(x)` auf und gibt danach implizit `undefined` zurück
+— das Muster in allen Dateien unter `routes/` — startet Fastify einen zweiten
+`onSend`-Zyklus, dessen leerer Payload die bereits komprimierte Antwort
+überschreibt. Ergebnis: `content-length: 0` und ein leerer Body.
+
+```js
+async (req, reply) => reply.send(big)      // 8981 B, korrekt
+async (req, reply) => { reply.send(big); } // 0 B, leerer Body
+```
+
+Reproduziert in @fastify/compress 8.3.1 und 9.2.0, unter Windows wie im
+`node:24-alpine`-Container. Die Abhängigkeit ist deshalb entfernt statt
+verdrahtet.
+
+Statische Frontend-Assets sind davon unberührt: die komprimiert
+`vite-plugin-compression2` beim Build vor, ausgeliefert via `gzip_static` in
+`frontend/nginx.conf`. Wer API-Antworten komprimieren will, setzt das am
+sinnvollsten im vorgelagerten Traefik auf — dort ohne diesen Fallstrick.
 
 ## Projektstruktur
 
