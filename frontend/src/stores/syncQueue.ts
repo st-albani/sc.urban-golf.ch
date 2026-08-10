@@ -11,7 +11,10 @@ export interface QueuedScore {
 }
 
 export const useSyncQueueStore = defineStore('syncQueue', () => {
-  const queue = useLocalStorage<QueuedScore[]>('ug-sync-queue', [])
+  // flush: 'sync' schreibt sofort in den localStorage statt erst im nächsten
+  // Microtask. Entscheidend beim Backgrounding: wer den letzten Score tippt und
+  // direkt das Handy sperrt, dessen Eintrag muss die eingefrorene PWA überleben.
+  const queue = useLocalStorage<QueuedScore[]>('ug-sync-queue', [], { flush: 'sync' })
 
   function enqueue(score: Omit<QueuedScore, 'id' | 'queuedAt'>) {
     // Deduplizierung: gleicher game+player+hole → neuesten Wert überschreiben
@@ -25,11 +28,15 @@ export const useSyncQueueStore = defineStore('syncQueue', () => {
       id: crypto.randomUUID(),
       queuedAt: Date.now(),
     }
+    // Neue Array-Referenz statt In-Place-Mutation — so greift der Persistenz-
+    // Watcher zuverlässig, auch beim Ersetzen eines bestehenden Eintrags.
+    const next = [...queue.value]
     if (idx >= 0) {
-      queue.value[idx] = entry
+      next[idx] = entry
     } else {
-      queue.value.push(entry)
+      next.push(entry)
     }
+    queue.value = next
   }
 
   function remove(id: string) {

@@ -106,7 +106,7 @@ CREATE TABLE public.scores (
     hole integer NOT NULL,
     strokes integer NOT NULL,
     id bigint NOT NULL,
-    CONSTRAINT chk_hole CHECK ((hole >= 1 AND hole <= 18)),
+    CONSTRAINT chk_hole CHECK ((hole >= 1 AND hole <= 200)),
     CONSTRAINT chk_strokes CHECK ((strokes >= -3 AND strokes <= 20))
 );
 

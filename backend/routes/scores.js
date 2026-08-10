@@ -27,7 +27,12 @@ export default async function (fastify, _opts) {
     schema: schemas.postScore,
     config: {
       rateLimit: {
-        max: 60,
+        // Das Limit greift pro IP — eine Gruppe am selben Hotspot (oder mehrere
+        // Geräte an derselben Runde) teilt es sich. Mit 60/min reichten wenige
+        // Löcher zu sechst, um 429 zu kassieren; da 4xx nicht wiederholt wird,
+        // ging der Score dabei früher verloren. 300 lässt normales Scoring
+        // durch und bremst weiterhin echten Missbrauch.
+        max: 300,
         timeWindow: '1 minute',
       },
     },
