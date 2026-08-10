@@ -24,37 +24,52 @@ npm run dev                                                   # http://localhost
 | DB | PostgreSQL 16 via `pg` (nativer Client, kein ORM) |
 | Migrations | node-pg-migrate 9 (SQL-Files, vorwärts-only) |
 | Security | @fastify/helmet, @fastify/cors, @fastify/rate-limit |
-| Compression | keine — API-Antworten gehen unkomprimiert raus (siehe unten) |
+| Compression | @fastify/compress 9 (brotli + gzip, ab 1 KB — siehe unten) |
 | Mail | nodemailer (Brevo/SMTP für Feedback) |
 | Tests | Vitest 4 |
 | Lint | ESLint 10 |
 
 ### Zur Kompression
 
-Die Tabelle führte hier lange `@fastify/compress` — das Paket war zwar als
-Abhängigkeit deklariert, wurde aber nie in `app.js` registriert. API-Antworten
-waren also durchgehend unkomprimiert, entgegen der Doku.
+`@fastify/compress` ist in `app.js` global registriert und komprimiert
+API-Antworten ab 1 KB mit brotli oder gzip, je nach `Accept-Encoding`. Der
+Schwellwert entspricht dem `gzip_min_length` in `frontend/nginx.conf`, Brotli
+läuft auf Qualität 4 — für dynamische Antworten der sinnvolle Kompromiss.
 
-Nachträglich zu registrieren scheitert an einem Zusammenspiel von
-`@fastify/compress` und dem Handler-Stil dieser Codebasis: Ruft ein
-async-Handler `reply.send(x)` auf und gibt danach implizit `undefined` zurück
-— das Muster in allen Dateien unter `routes/` — startet Fastify einen zweiten
-`onSend`-Zyklus, dessen leerer Payload die bereits komprimierte Antwort
-überschreibt. Ergebnis: `content-length: 0` und ein leerer Body.
+Kompression gehört ins Backend, weil sie sonst nirgends passiert: In Produktion
+routet Traefik `/api` direkt aufs Backend, nginx sieht die API-Antworten also
+nie. Im Compose-Pfad liefe es zwar durch nginx, dessen `gzip` greift aber ohne
+`gzip_proxied` nicht für Upstream-Antworten.
 
-```js
-async (req, reply) => reply.send(big)      // 8981 B, korrekt
-async (req, reply) => { reply.send(big); } // 0 B, leerer Body
-```
+> **Wichtig für neue Routen:** Jeder async-Handler muss sein Ergebnis
+> zurückgeben — `return reply.send(x)` oder `return wert`.
+>
+> ```js
+> async (req, reply) => { return reply.send(data) }  // korrekt
+> async (req, reply) => { reply.send(data) }         // liefert einen leeren Body
+> ```
+>
+> Gibt der Handler implizit `undefined` zurück, ist das für Fastify die
+> Aussage „die Antwort ist `undefined`". Es folgt ein zweiter `onSend`-Zyklus,
+> dessen leerer Payload die bereits komprimierte Antwort überschreibt —
+> Resultat ist `content-length: 0` und ein leerer Body, ohne Fehlermeldung.
+>
+> Das ist kein Bug im Plugin, sondern Fastifys Promise-Semantik seit v4
+> ([fastify-compress#237](https://github.com/fastify/fastify-compress/issues/237)).
+> Ohne aktive Kompression fällt es nur nicht auf, weil Fastifys
+> „bereits gesendet"-Guard den zweiten Zyklus abfängt.
 
-Reproduziert in @fastify/compress 8.3.1 und 9.2.0, unter Windows wie im
-`node:24-alpine`-Container. Die Abhängigkeit ist deshalb entfernt statt
-verdrahtet.
+Gemessen an echten Antworten (Postgres 16, 60 Runden à 6 Spieler × 18 Löcher):
 
-Statische Frontend-Assets sind davon unberührt: die komprimiert
+| Endpunkt | identity | gzip | brotli |
+| --- | --- | --- | --- |
+| `GET /api/scores?game_id=…` | 13.663 B | 934 B (−93 %) | 862 B (−94 %) |
+| `GET /api/players` | 10.939 B | 1.043 B (−90 %) | 638 B (−94 %) |
+| `GET /api/games/summary` | 6.579 B | 737 B (−89 %) | 639 B (−90 %) |
+
+Statische Frontend-Assets laufen weiterhin einen eigenen Weg: die komprimiert
 `vite-plugin-compression2` beim Build vor, ausgeliefert via `gzip_static` in
-`frontend/nginx.conf`. Wer API-Antworten komprimieren will, setzt das am
-sinnvollsten im vorgelagerten Traefik auf — dort ohne diesen Fallstrick.
+`frontend/nginx.conf`.
 
 ## Projektstruktur
 

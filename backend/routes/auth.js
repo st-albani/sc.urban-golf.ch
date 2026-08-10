@@ -327,7 +327,7 @@ export default async function (fastify, _opts) {
       const wins = played.filter((r) => Number(r.my_total) === Number(r.best_total)).length;
 
       const round2 = (n) => Math.round(n * 100) / 100;
-      reply.send({
+      return reply.send({
         rounds,
         overallAvg: totalHoles > 0 ? round2(totalStrokes / totalHoles) : null,
         bestRoundAvg: rounds ? round2(Math.min(...roundAvgs)) : null,

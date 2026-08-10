@@ -81,10 +81,10 @@ export default async function (fastify, _opts) {
         return gameResult.rows[0];
       });
 
-      reply.send({ ...game, status: 'upserted' });
+      return reply.send({ ...game, status: 'upserted' });
     } catch (err) {
       fastify.log.error({ id, players, error: err.message }, 'Failed to upsert game with players');
-      reply.code(500).send({ error: 'Database error' });
+      return reply.code(500).send({ error: 'Database error' });
     }
   });
 
@@ -136,13 +136,13 @@ export default async function (fastify, _opts) {
         query(countQuery, valuesCount),
       ]);
 
-      reply.send({
+      return reply.send({
         games,
         total: parseInt(countRows[0].count),
       });
     } catch (err) {
       fastify.log.error(err);
-      reply.code(500).send({ error: 'Database error' });
+      return reply.code(500).send({ error: 'Database error' });
     }
   });
 
@@ -161,7 +161,7 @@ export default async function (fastify, _opts) {
     const me = account?.id ?? null;
     const game = await queryOne(`SELECT id, name, visibility, created_by FROM games WHERE id = $1`, [gameId]);
     if (!game) return reply.code(404).send({ error: 'Not found' });
-    reply.send({
+    return reply.send({
       id: game.id,
       name: game.name,
       visibility: game.visibility,
@@ -185,7 +185,7 @@ export default async function (fastify, _opts) {
        WHERE gp.game_id = $1`,
       [gameId]
     );
-    reply.send(rows);
+    return reply.send(rows);
   });
 
   // Zusammenfassung with total count for pagination
@@ -269,13 +269,13 @@ export default async function (fastify, _opts) {
         query(countQuery, countValues),
       ]);
 
-      reply.send({
+      return reply.send({
         games,
         total: parseInt(countRows[0].count),
       });
     } catch (err) {
       fastify.log.error(err);
-      reply.code(500).send({ error: 'Database error' });
+      return reply.code(500).send({ error: 'Database error' });
     }
   });
 }

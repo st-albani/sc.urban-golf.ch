@@ -20,7 +20,7 @@ export default async function (fastify, _opts) {
        ORDER BY s.hole ASC, p.name ASC`,
       [gameId]
     );
-    reply.send(rows);
+    return reply.send(rows);
   });
 
   fastify.post('/', {
@@ -47,6 +47,6 @@ export default async function (fastify, _opts) {
        RETURNING id`,
       [game_id, player_id, hole, strokes]
     );
-    reply.code(200).send({ id: rows[0].id, game_id, player_id, hole, strokes });
+    return reply.code(200).send({ id: rows[0].id, game_id, player_id, hole, strokes });
   });
 }

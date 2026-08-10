@@ -21,17 +21,17 @@ export default async function (fastify, _opts) {
          ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
         [id, name]
       );
-      reply.code(200).send({ id, name, status: 'upserted' });
+      return reply.code(200).send({ id, name, status: 'upserted' });
     } catch (err) {
       fastify.log.error(err);
-      reply.code(500).send({ error: 'Database error' });
+      return reply.code(500).send({ error: 'Database error' });
     }
   });
 
   // Alle Spieler abrufen
   fastify.get('/', async (_req, reply) => {
     const rows = await query('SELECT * FROM players ORDER BY name');
-    reply.send(rows);
+    return reply.send(rows);
   });
 
   // Registrierte Spieler suchen (Konten mit kanonischer Identität, d. h.
@@ -52,10 +52,10 @@ export default async function (fastify, _opts) {
          LIMIT 10`,
         [`%${q}%`],
       );
-      reply.send({ players: rows });
+      return reply.send({ players: rows });
     } catch (err) {
       fastify.log.error(err);
-      reply.code(500).send({ error: 'Database error' });
+      return reply.code(500).send({ error: 'Database error' });
     }
   });
 }
