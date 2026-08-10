@@ -1,5 +1,5 @@
 # Frontend Dockerfile
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 
 # Copy root package files and every workspace's package.json so npm can
@@ -14,7 +14,7 @@ COPY packages/contract/ ./packages/contract/
 # for the vite build).
 RUN npm ci --workspace=frontend --workspace=@urban-golf/contract
 
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Build arguments for environment variables

@@ -1,5 +1,5 @@
 # Backend Dockerfile
-FROM node:20-alpine AS deps
+FROM node:24-alpine AS deps
 WORKDIR /app
 
 # Copy root package files and every workspace's package.json so npm can
@@ -13,7 +13,7 @@ COPY packages/contract/ ./packages/contract/
 # Install only backend production dependencies, plus the shared contract.
 RUN npm ci --workspace=backend --workspace=@urban-golf/contract --omit=dev
 
-FROM node:20-alpine AS runner
+FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 

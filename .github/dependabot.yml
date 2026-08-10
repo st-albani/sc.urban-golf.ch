@@ -60,3 +60,12 @@ updates:
       docker-base-images:
         patterns:
           - "*"
+    # Dependabot folgt beim node-Tag stumpf dem höchsten Major und kennt den
+    # LTS-Status nicht — so kam #135 mit einem Sprung auf das damalige Non-LTS
+    # node:26. Major-Wechsel machen wir bewusst: jeden Oktober, wenn der neue
+    # LTS-Zweig aufgeht (Node 26 wird 10/2026 LTS). Patches innerhalb von
+    # node:24-alpine kommen ohnehin über das floating Tag.
+    ignore:
+      - dependency-name: node
+        update-types:
+          - version-update:semver-major
