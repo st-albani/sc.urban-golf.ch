@@ -107,7 +107,6 @@ ADMIN_EMAIL=admin@urban-golf.ch
 | `npm run test:watch` | Vitest Watch-Mode |
 | `npm run lint` / `lint:fix` | ESLint |
 | `npm run migrate:up` | Migrations anwenden (SQL-Files in `db/migrations/`) |
-| `npm run migrate:down` | Letzte Migration zurückrollen |
 | `npm run migrate:create` | Neues Migration-Skelett erzeugen |
 | `npm run migrate:baseline` | Bestehende DB als "migrated" markieren (einmalig nach Init-Schema) |
 
@@ -122,10 +121,12 @@ npm run migrate:create -- add_course_table
 
 # 3) Anwenden
 npm run migrate:up
-
-# 4) Rollback (optional, zum Testen)
-npm run migrate:down
 ```
+
+Migrations laufen **vorwärts-only** — es gibt bewusst kein `migrate:down`, siehe
+[ADR-0001](../docs/adr/0001-forward-only-migrations.md). Ein fehlerhafter
+Schema-Stand wird durch eine neue, korrigierende Migration behoben. Lokal setzt
+`npm run db:reset` (Repo-Root) die Datenbank per Volume-Neuaufbau zurück.
 
 ## API-Routen (Kurzüberblick)
 
