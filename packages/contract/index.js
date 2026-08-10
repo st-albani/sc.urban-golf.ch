@@ -7,7 +7,12 @@ export const VALIDATION = Object.freeze({
   STROKES_MIN: -3,
   STROKES_MAX: 20,
   HOLE_MIN: 1,
-  HOLE_MAX: 18,
+  // Urban-Golf-Runden folgen nicht dem klassischen 18-Loch-Schema — 9, 12 oder
+  // deutlich längere Stadtrunden sind üblich. Der Wert ist deshalb nur eine
+  // Sanity-Grenze gegen Müll-Daten (kaputte Links, /games/:id/99999), keine
+  // fachliche Limitierung. Wer sie erhöht, braucht zusätzlich eine Migration
+  // für chk_hole (siehe backend/db/migrations/011_raise-hole-limit.sql).
+  HOLE_MAX: 200,
   NAME_MAX_LENGTH: 100,
   GAME_NAME_MAX_LENGTH: 100,
   MESSAGE_MAX_LENGTH: 2000,

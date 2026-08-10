@@ -2,7 +2,7 @@ export interface ValidationLimits {
   readonly STROKES_MIN: -3;
   readonly STROKES_MAX: 20;
   readonly HOLE_MIN: 1;
-  readonly HOLE_MAX: 18;
+  readonly HOLE_MAX: 200;
   readonly NAME_MAX_LENGTH: 100;
   readonly GAME_NAME_MAX_LENGTH: 100;
   readonly MESSAGE_MAX_LENGTH: 2000;

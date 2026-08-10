@@ -431,18 +431,27 @@ async function runSave(lockKey: string) {
   inFlight.add(lockKey)
   savingMap.value[playerId] = true
   try {
+    // Sobald ein Score erfasst ist, taucht das Loch in der geteilten
+    // holes-Liste auf — ein "weitergeblättertes" Loch OHNE Score erscheint
+    // weder in der Scorecard noch im Pill-Strip.
+    //
+    // Massgeblich ist die Erfassung, nicht die Server-Antwort: saveScore legt
+    // den Wert immer in der Sync-Queue ab und stellt ihn spätestens beim
+    // nächsten Retry zu. Früher hing das Loch an einem erfolgreichen Request —
+    // schlug der fehl, verschwand es spurlos aus der Runde.
+    if (Number.isInteger(h) && !holes.value.includes(h)) {
+      holes.value = [...holes.value, h].sort((a, b) => a - b)
+    }
     await saveScoreOffline({
       game_id: gameId.value,
       player_id: playerId,
       hole: h,
       strokes: Number(scores.value[playerId][h]),
     })
-    // Erst NACHDEM ein Score gespeichert ist, tauchen wir das Loch in der
-    // geteilten holes-Liste auf — so erscheint ein "weitergeblättertes" Loch
-    // OHNE eingegebenen Score weder in der Scorecard noch im Pill-Strip.
-    if (Number.isInteger(h) && !holes.value.includes(h)) {
-      holes.value = [...holes.value, h].sort((a, b) => a - b)
-    }
+  } catch (err) {
+    // saveScore wirft per Vertrag nicht — hier landet nur Unerwartetes. Ohne
+    // diesen Zweig würde es als Unhandled Rejection verpuffen.
+    console.error('Score-Save fehlgeschlagen:', err)
   } finally {
     inFlight.delete(lockKey)
     savingMap.value[playerId] = false
@@ -489,13 +498,25 @@ watch(() => hole.value, () => {
   requestAnimationFrame(() => scrollCurrentPillIntoView())
 })
 
+// Beim Backgrounding der PWA (Handy sperren direkt nach dem letzten Score)
+// läuft der 400-ms-Debounce nicht mehr ab — das OS friert die App vorher ein
+// und der Wert war weg. `hidden`/`pagehide` ist der letzte Moment, in dem wir
+// ihn noch in die Sync-Queue schreiben können.
+function flushOnHidden() {
+  if (document.visibilityState === 'hidden') flushPendingSaves()
+}
+
 onMounted(() => {
   requestAnimationFrame(() => scrollCurrentPillIntoView())
   window.addEventListener('keydown', onKeypadKey)
+  document.addEventListener('visibilitychange', flushOnHidden)
+  window.addEventListener('pagehide', flushPendingSaves)
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKeypadKey)
+  document.removeEventListener('visibilitychange', flushOnHidden)
+  window.removeEventListener('pagehide', flushPendingSaves)
   // Nicht verworfene Eingaben beim Verlassen der View noch persistieren.
   flushPendingSaves()
 })

@@ -82,6 +82,31 @@ describe('useScoreSyncStore', () => {
       expect(queueStore.queue).toHaveLength(1)
       expect(queueStore.queue[0]).toMatchObject({ game_id: 'g1234567890123', hole: 1, strokes: 3 })
     })
+
+    // Kernregression: `navigator.onLine` meldet auf dem Platz auch dann online,
+    // wenn der Request stirbt (Captive Portal, schwaches Netz, 429). Früher war
+    // der Score damit weder gespeichert noch gequeued — das Loch fehlte danach.
+    it('keeps the score queued when the request fails while online', async () => {
+      mockApiSave.mockRejectedValue(new Error('Network error'))
+      const store = scope.run(() => useScoreSyncStore())!
+
+      await expect(
+        store.saveScore({ game_id: 'g1234567890123', player_id: 'p1234567890123', hole: 7, strokes: 5 })
+      ).resolves.toBeUndefined()
+
+      expect(mockApiSave).toHaveBeenCalled()
+      expect(queueStore.queue).toHaveLength(1)
+      expect(queueStore.queue[0]).toMatchObject({ hole: 7, strokes: 5 })
+    })
+
+    it('does not toast on the per-tap path', async () => {
+      mockApiSave.mockResolvedValue({ id: 1, game_id: 'g1234567890123', player_id: 'p1234567890123', hole: 1, strokes: 3 })
+      const store = scope.run(() => useScoreSyncStore())!
+
+      await store.saveScore({ game_id: 'g1234567890123', player_id: 'p1234567890123', hole: 1, strokes: 3 })
+
+      expect(mockSuccess).not.toHaveBeenCalled()
+    })
   })
 
   describe('flushQueue', () => {
@@ -166,6 +191,20 @@ describe('useScoreSyncStore', () => {
 
       expect(mockSuccess).toHaveBeenCalledWith('Network.BackOnline', 3000)
       expect(mockApiSave).toHaveBeenCalled()
+      expect(queueStore.queue).toHaveLength(0)
+    })
+
+    // Der Watcher feuert nur bei einem Übergang. Wer offline erfasst und die
+    // PWA schliesst, startet sie später online neu — ohne Übergang blieb die
+    // Queue sonst dauerhaft liegen.
+    it('flushes a queue left over from a previous session on install', async () => {
+      queueStore.enqueue({ game_id: 'g1234567890123', player_id: 'p1234567890123', hole: 4, strokes: 2 })
+      mockApiSave.mockResolvedValue({ id: 1, game_id: 'g1234567890123', player_id: 'p1234567890123', hole: 4, strokes: 2 })
+
+      scope.run(() => useScoreSyncStore().installNetworkWatcher())
+      await new Promise(r => setTimeout(r, 50))
+
+      expect(mockApiSave).toHaveBeenCalledTimes(1)
       expect(queueStore.queue).toHaveLength(0)
     })
 

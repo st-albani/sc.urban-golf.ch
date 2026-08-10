@@ -2,6 +2,28 @@
 
 ---
 
+## [Unreleased]
+### 🪲 Bugfixes
+- Scores gehen bei wackliger Verbindung nicht mehr verloren — bisher konnten
+  einzelne Löcher aus einer Runde verschwinden, wenn der Browser sich für online
+  hielt, der Request aber scheiterte (WLAN ohne Internet, Captive Portal,
+  schwaches Mobilnetz). Jede Eingabe landet jetzt zuerst in der Sync-Queue.
+- Offline erfasste Scores werden auch dann übertragen, wenn die App zwischendurch
+  geschlossen wurde (Flush beim Start statt nur beim Online-Wechsel)
+- Der letzte Score geht nicht mehr verloren, wenn direkt danach das Handy
+  gesperrt wird
+
+### ✨ Verbesserungen
+- Runden sind nicht mehr auf 18 Löcher begrenzt (neu bis 200) — Urban-Golf-Runden
+  folgen nicht dem klassischen 18-Loch-Schema
+- Rate-Limit für Score-Eingaben angehoben, damit grössere Gruppen im selben
+  Netz sich nicht gegenseitig ausbremsen
+
+> **Migration:** `011_raise-hole-limit.sql` hebt den `chk_hole`-Constraint an.
+> Wird beim Container-Start automatisch angewendet.
+
+---
+
 ## [3.0.0] – 2026-04-16
 ### 🎨 Greenway Design-System
 - Komplett neu designtes UI: mobile-first, Ranking-First Scorecard
