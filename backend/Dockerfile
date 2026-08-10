@@ -11,7 +11,13 @@ COPY frontend/package.json ./frontend/
 COPY packages/contract/ ./packages/contract/
 
 # Install only backend production dependencies, plus the shared contract.
-RUN npm ci --workspace=backend --workspace=@urban-golf/contract --omit=dev
+#
+# mkdir: npm hebt Workspace-Abhängigkeiten nur so weit ins Root-node_modules,
+# wie es kollisionsfrei geht — bei einem Versionskonflikt landen sie stattdessen
+# unter backend/node_modules. Das Verzeichnis muss deshalb existieren, damit der
+# COPY im runner-Stage nicht davon abhängt, wie npm gerade auflöst.
+RUN npm ci --workspace=backend --workspace=@urban-golf/contract --omit=dev \
+ && mkdir -p /app/backend/node_modules
 
 FROM node:24-alpine AS runner
 WORKDIR /app
@@ -19,9 +25,13 @@ ENV NODE_ENV=production
 
 RUN addgroup -g 1001 -S nodejs && adduser -S nodejs -u 1001
 
-# Copy hoisted node_modules + packages/ from workspace install so the
-# symlinked @urban-golf/contract resolves at runtime.
+# Copy node_modules + packages/ from workspace install so the symlinked
+# @urban-golf/contract resolves at runtime.
 COPY --from=deps /app/node_modules ./node_modules
+# Die nicht gehoisteten Pakete darüberlegen. Der Source liegt hier flach unter
+# /app/, es gibt also nur eine Auflösungsebene — und genau die muss der Sicht des
+# backend-Workspace entsprechen, wo Genestetes das Gehoistete überschattet.
+COPY --from=deps /app/backend/node_modules ./node_modules
 COPY --from=deps /app/packages ./packages
 
 # Copy backend source code (flat layout: backend/ contents → /app/)

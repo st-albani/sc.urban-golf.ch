@@ -12,7 +12,13 @@ COPY packages/contract/ ./packages/contract/
 
 # Install frontend + the shared contract workspace (devDependencies included
 # for the vite build).
-RUN npm ci --workspace=frontend --workspace=@urban-golf/contract
+#
+# mkdir: npm hebt Workspace-Abhängigkeiten nur so weit ins Root-node_modules,
+# wie es kollisionsfrei geht — bei einem Versionskonflikt landen sie stattdessen
+# unter frontend/node_modules. Das Verzeichnis muss deshalb existieren, damit
+# der COPY im builder-Stage nicht davon abhängt, wie npm gerade auflöst.
+RUN npm ci --workspace=frontend --workspace=@urban-golf/contract \
+ && mkdir -p /app/frontend/node_modules
 
 FROM node:24-alpine AS builder
 WORKDIR /app
@@ -24,6 +30,10 @@ ENV VITE_API_BASEURL=$VITE_API_BASEURL
 # Copy node_modules + packages/ from workspace install so the symlinked
 # @urban-golf/contract resolves at build time.
 COPY --from=deps /app/node_modules ./node_modules
+# Die nicht gehoisteten Pakete darüberlegen. Der Source liegt hier flach unter
+# /app/, es gibt also nur eine Auflösungsebene — und genau die muss der Sicht des
+# frontend-Workspace entsprechen, wo Genestetes das Gehoistete überschattet.
+COPY --from=deps /app/frontend/node_modules ./node_modules
 COPY --from=deps /app/packages ./packages
 
 # Copy frontend source code (flat layout: frontend/ contents → /app/)
