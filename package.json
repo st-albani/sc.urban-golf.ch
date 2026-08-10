@@ -25,7 +25,6 @@
     "db:import": "node scripts/db-import.js",
     "db:reset": "docker-compose -f docker-compose.dev.yml down -v && docker-compose -f docker-compose.dev.yml up -d",
     "db:migrate": "npm run migrate:up --workspace=backend",
-    "db:migrate:down": "npm run migrate:down --workspace=backend",
     "test": "npm run test --workspaces --if-present",
     "test:frontend": "npm run test --workspace=frontend",
     "test:backend": "npm run test --workspace=backend",

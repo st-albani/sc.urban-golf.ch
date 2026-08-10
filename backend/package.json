@@ -14,7 +14,6 @@
     "migrate:baseline": "node --env-file-if-exists=../.env --env-file-if-exists=./.env scripts/baseline-migrations.js",
     "migrate": "node --env-file-if-exists=../.env --env-file-if-exists=./.env ../node_modules/node-pg-migrate/bin/node-pg-migrate.js --migration-file-language sql -m db/migrations",
     "migrate:up": "npm run migrate:baseline && node --env-file-if-exists=../.env --env-file-if-exists=./.env ../node_modules/node-pg-migrate/bin/node-pg-migrate.js up --migration-file-language sql -m db/migrations",
-    "migrate:down": "node --env-file-if-exists=../.env --env-file-if-exists=./.env ../node_modules/node-pg-migrate/bin/node-pg-migrate.js down --migration-file-language sql -m db/migrations",
     "migrate:create": "node --env-file-if-exists=../.env --env-file-if-exists=./.env ../node_modules/node-pg-migrate/bin/node-pg-migrate.js create --migration-file-language sql -m db/migrations"
   },
   "dependencies": {
