@@ -102,11 +102,24 @@ frontend/src/
 
 ## Tests sind Pflicht-Gates
 
-Branch-Protection (via CI) erwartet, dass diese Jobs grün sind:
-- `static-checks` (Lint + Type-Check)
-- `unit-frontend` + `unit-backend`
-- `e2e-smoke` (Playwright mit Mock-API)
-- `ci-green` (Meta-Gate)
+Das Ruleset auf `main` verlangt genau **einen** Status-Check: `CI Green`. Das
+Meta-Gate hängt an allen vier Jobs unten und wird rot, sobald einer davon
+fehlschlägt — es muss also nur dieser eine Name im Ruleset stehen.
+
+| Job-ID in ci.yml | Check-Name (den GitHub sieht) | Inhalt |
+| --- | --- | --- |
+| `static-checks` | `Lint & Type Check` | ESLint + vue-tsc |
+| `unit-frontend` | `Unit Tests (Frontend)` | Vitest |
+| `unit-backend` | `Unit Tests (Backend)` | Vitest |
+| `e2e-smoke` | `E2E Smoke (Mock-API)` | Playwright, kein Backend |
+| `ci-green` | `CI Green` | Meta-Gate über die vier obigen |
+
+Beide Spalten auseinanderzuhalten ist wichtig: Required-Checks matchen über den
+**Check-Namen**, nicht über die Job-ID. Ein Required-Check, dessen Name zu
+keinem Job passt, bleibt dauerhaft auf „Expected" — der PR ist dann
+unmergebar, ohne dass je etwas rot wird. Genau deshalb steht im Ruleset nur
+`CI Green`: Umbenennungen einzelner Jobs können die Protection so nicht
+aushebeln.
 
 Siehe [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
