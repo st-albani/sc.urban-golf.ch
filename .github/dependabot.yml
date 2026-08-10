@@ -1,0 +1,62 @@
+version: 2
+
+# Security-Updates laufen unabhängig von dieser Datei (Repo-Setting "Dependabot security
+# updates"). Hier geht es um die regulären Version-Updates, die bisher gefehlt haben.
+updates:
+  # npm-Workspaces werden über das Root-Lockfile aufgelöst — ein Eintrag deckt
+  # frontend/, backend/ und packages/contract/ ab.
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Zurich
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: chore
+      include: scope
+    # Minor/Patch gebündelt, damit nicht jede Woche ein Dutzend Lockfile-PRs
+    # gegeneinander konfligiert. Majors kommen einzeln — die wollen wir bewusst prüfen.
+    groups:
+      production-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      development-minor-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Zurich
+    commit-message:
+      prefix: ci
+    groups:
+      github-actions:
+        patterns:
+          - "*"
+
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Zurich
+    commit-message:
+      prefix: chore
+      include: scope
+    groups:
+      docker-base-images:
+        patterns:
+          - "*"
