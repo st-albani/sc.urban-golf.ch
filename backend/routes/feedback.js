@@ -38,6 +38,6 @@ export default async function (fastify, _opts) {
       }
     }
 
-    reply.send({ success: true });
+    return reply.send({ success: true });
   });
 }

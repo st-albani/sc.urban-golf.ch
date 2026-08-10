@@ -8,6 +8,7 @@ const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 import Fastify from 'fastify';
+import fastifyCompress from '@fastify/compress';
 import fastifyHelmet from '@fastify/helmet';
 import fastifyRateLimit from '@fastify/rate-limit';
 import fastifyCookie from '@fastify/cookie';
@@ -89,6 +90,22 @@ await fastify.register(fastifyRateLimit, {
   skipOnError: true,
 });
 
+// Kompression passt sonst nirgends hin: In Produktion routet Traefik /api direkt
+// aufs Backend, nginx sieht die API-Antworten also nie. Im Compose-Pfad ginge es
+// zwar durch nginx, dessen `gzip` greift aber ohne `gzip_proxied` nicht für
+// Upstream-Antworten.
+//
+// Voraussetzung dafür ist, dass jeder async-Handler sein Ergebnis zurückgibt
+// (`return reply.send(x)`). Gibt er stattdessen implizit `undefined` zurück,
+// fährt Fastify einen zweiten onSend-Zyklus, dessen leerer Payload die
+// komprimierte Antwort überschreibt — Resultat ist `content-length: 0` und ein
+// leerer Body. Das ist kein Bug, sondern Fastifys Promise-Semantik seit v4,
+// siehe fastify/fastify-compress#237. Ohne Kompression fällt es nur nicht auf.
+//
+// Defaults bewusst nicht überschrieben: threshold 1024 entspricht dem
+// `gzip_min_length` in frontend/nginx.conf, Brotli läuft auf Qualität 4.
+await fastify.register(fastifyCompress);
+
 fastify.register(scoreRoutes, { prefix: '/api/scores' });
 fastify.register(gameRoutes, { prefix: '/api/games' });
 fastify.register(playerRoutes, { prefix: '/api/players' });
@@ -96,7 +113,7 @@ fastify.register(feedbackRoutes, { prefix: '/api/feedback' });
 fastify.register(authRoutes, { prefix: '/api/auth' });
 
 fastify.get('/', async (req, reply) => {
-  reply.send({ status: 'ok', service: 'Urban Golf API' });
+  return reply.send({ status: 'ok', service: 'Urban Golf API' });
 });
 
 const PORT = process.env.PORT || 3000;

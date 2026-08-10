@@ -12,7 +12,7 @@ Fastify 5 Backend, vollständig in Docker containerisierbar, Offline-fähig.
 ## Tech-Stack auf einen Blick
 
 - **Frontend**: Vue 3.4 + Vite 8 + TypeScript + Tailwind v4 + Pinia 3 + Vue-Router 5 + vue-i18n 11 + vite-plugin-pwa 1
-- **Backend**: Fastify 5 + pg (nativer PostgreSQL-Client)
+- **Backend**: Fastify 5 + pg (nativer PostgreSQL-Client) + @fastify/compress
 - **DB**: PostgreSQL 16 (Alpine) — Schema in [backend/db/init/schema.sql](backend/db/init/schema.sql)
 - **Tests**: Vitest (Unit) + Playwright Smoke-Suite mit Mock-API. Backend-Contract-Tests geplant — siehe [.claude/plans/backend-contract-tests.md](.claude/plans/backend-contract-tests.md).
 - **Infra**: Docker + Nginx (statische Auslieferung Frontend) + Traefik-ready, GitHub Actions CI/CD
@@ -47,6 +47,7 @@ npm run test:all       # lint + type-check + unit + smoke-e2e
 - **Kein Glass-Morphism** mehr (wurde durch Elevation ersetzt). Historische Klassen wie `glass-card`, `button-primary`, `input-field` existieren NICHT mehr — verwende die neuen Primitive in [frontend/src/components/ui/](frontend/src/components/ui/).
 - **ESLint + vue-tsc** müssen clean sein vor Commit. `npm run lint:fix` löst die meisten Style-Issues.
 - **Kommentare**: nur wo das *Warum* nicht offensichtlich ist. Keine What-Kommentare.
+- **Fastify-Handler müssen ihr Ergebnis zurückgeben** — `return reply.send(x)` oder `return wert`, nie nur `reply.send(x)`. Ein implizites `undefined` bedeutet für Fastify „die Antwort ist `undefined`" und liefert mit aktiver Kompression einen **leeren Body ohne Fehlermeldung**. Abgesichert durch [backend/routes/__tests__/compression.test.js](backend/routes/__tests__/compression.test.js).
 
 ## Skills
 

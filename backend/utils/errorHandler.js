@@ -16,7 +16,7 @@ export function handleError(error, request, reply) {
   }
   request.log.error(error);
   const statusCode = error.statusCode || 500;
-  reply.code(statusCode).send({
+  return reply.code(statusCode).send({
     error: statusCode >= 500 ? 'Internal server error' : error.message,
   });
 }
