@@ -35,7 +35,8 @@ npm run test:all       # lint + type-check + unit + smoke-e2e
 | --- | --- |
 | `npm install` | beide Workspaces installieren |
 | `npm run dev` | Frontend + Backend parallel starten |
-| `npm run test:all` | komplette Test-Pipeline ohne Backend (~15 s) |
+| `npm run test:all` | komplette Test-Pipeline ohne Backend (~35 s warm, erster Lauf länger) |
+| `npm run lint:fix` | ESLint --fix über beide Workspaces |
 | `npm run test:e2e:smoke --workspace=frontend` | Smoke-E2E (Playwright mit Mock-API, kein Backend) |
 | `npm run docker:dev` | kompletter Stack via Docker Compose |
 

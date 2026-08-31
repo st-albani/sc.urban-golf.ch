@@ -31,8 +31,10 @@
     "lint": "npm run lint --workspaces --if-present",
     "lint:frontend": "npm run lint --workspace=frontend",
     "lint:backend": "npm run lint --workspace=backend",
+    "lint:fix": "npm run lint:fix --workspaces --if-present",
     "type-check": "npm run type-check --workspace=frontend",
-    "test:e2e:smoke": "npm run test:e2e:smoke --workspace=frontend"
+    "test:e2e:smoke": "npm run test:e2e:smoke --workspace=frontend",
+    "test:all": "npm run lint && npm run type-check && npm run test && npm run test:e2e:smoke"
   },
   "overrides": {
     "serialize-javascript": "^7.0.5"
