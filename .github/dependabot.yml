@@ -10,7 +10,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: "06:00"
+      time: "03:00"
       timezone: Europe/Zurich
     open-pull-requests-limit: 5
     commit-message:
@@ -29,13 +29,22 @@ updates:
         update-types:
           - minor
           - patch
+      # Kontostandard: Patch und Minor getrennt, damit ein reiner Patch-PR auch
+      # als "patch" gemeldet wird — das Auto-Merge-Gate in ci.yml hängt daran.
+      # Stehen bewusst hinter den beiden Gruppen oben, die zuerst greifen.
+      npm-patch:
+        patterns: ['*']
+        update-types: ['patch']
+      npm-minor:
+        patterns: ['*']
+        update-types: ['minor']
 
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
       interval: weekly
       day: monday
-      time: "06:00"
+      time: "03:00"
       timezone: Europe/Zurich
     commit-message:
       prefix: ci
@@ -51,7 +60,7 @@ updates:
     schedule:
       interval: weekly
       day: monday
-      time: "06:00"
+      time: "03:00"
       timezone: Europe/Zurich
     commit-message:
       prefix: chore
