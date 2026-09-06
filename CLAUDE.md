@@ -81,7 +81,8 @@ frontend/src/
     pwa/                                   PWAInstallBanner, PWAUpdateDialog
   composables/                             useGamesDetailData, useSortedPlayers, useOfflineSync,
                                            useThemeMode, useNetworkStatus, usePWAUpdate, …
-  stores/syncQueue.ts                      Pinia-Store für Offline-Queue (dedup, persist)
+  stores/scoreWriter.ts                    Pinia-Store: einziger Score-Schreibpfad
+                                           (write/flush, Offline-Queue, dedup, persist)
   services/api.ts                          Axios-Wrapper + Retry
   locales/{de,en,fr,nl}.json               i18n-Strings
   assets/tokens.css                        Design-Tokens (Tailwind @theme)
