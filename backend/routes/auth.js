@@ -15,6 +15,7 @@ import {
   getAccountFromRequest,
   requireAuth,
 } from '../utils/auth.js';
+import { avgStrokesSql } from '../utils/standingsSql.js';
 
 const toAccount = (r) => ({
   id: r.id,
@@ -267,7 +268,7 @@ export default async function (fastify, _opts) {
          ),
          player_stats AS (
            SELECT g.id AS game_id, p.id AS player_id, p.name,
-                  ROUND(AVG(s.strokes)::numeric, 2) AS avg,
+                  ${avgStrokesSql('s.strokes')} AS avg,
                   SUM(s.strokes) AS total
            FROM my_games g
            JOIN game_players gp ON gp.game_id = g.id

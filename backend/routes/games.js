@@ -1,6 +1,7 @@
 import { query, queryOne, transaction } from '../db/pg.js';
 import { schemas, isValidId } from '@urban-golf/contract';
 import { getAccountFromRequest } from '../utils/auth.js';
+import { avgStrokesSql } from '../utils/standingsSql.js';
 
 /**
  * SQL-Fragment: ein Spiel `g` ist sichtbar, wenn es öffentlich ist ODER der
@@ -232,7 +233,7 @@ export default async function (fastify, _opts) {
             g.id AS game_id,
             p.id AS player_id,
             p.name,
-            ROUND(AVG(s.strokes)::numeric, 2) AS avg,
+            ${avgStrokesSql('s.strokes')} AS avg,
             SUM(s.strokes) AS total
           FROM filtered_games g
           JOIN game_players gp ON gp.game_id = g.id
