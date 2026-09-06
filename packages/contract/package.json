@@ -9,10 +9,16 @@
     ".": {
       "types": "./index.d.ts",
       "import": "./index.js"
+    },
+    "./standings": {
+      "types": "./standings.d.ts",
+      "import": "./standings.js"
     }
   },
   "files": [
     "index.js",
-    "index.d.ts"
+    "index.d.ts",
+    "standings.js",
+    "standings.d.ts"
   ]
 }

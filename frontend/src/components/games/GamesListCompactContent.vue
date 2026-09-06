@@ -82,7 +82,7 @@
             >
               <span class="games-list__player-name">{{ player.name }}</span>
               <span class="games-list__player-stats">
-                Ø {{ player.avg?.toFixed(2) ?? '–' }}
+                Ø {{ formatAverage(player.avg) }}
                 <span class="games-list__player-divider">·</span>
                 Σ {{ player.total ?? '–' }}
               </span>
@@ -101,6 +101,7 @@
 import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useDebounceFn } from '@vueuse/core'
+import { formatAverage } from '@urban-golf/contract/standings'
 import { useGamesSummaryData } from '@/composables/useGamesSummaryData'
 import { useInfiniteLoader } from '@/composables/useInfiniteLoader'
 import { useRouter } from 'vue-router'

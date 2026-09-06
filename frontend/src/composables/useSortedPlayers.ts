@@ -1,28 +1,25 @@
 import { ref, computed, type Ref } from 'vue'
+import { standings, playerStandings, formatAverage } from '@urban-golf/contract/standings'
 import type { Player } from '@/services/api'
+import type { ScoreMap } from '@/types'
 
 type SortColumn = 'name' | 'total' | 'average'
 type SortDirection = 'asc' | 'desc'
-type ScoreMap = { [playerId: string]: { [hole: number]: number | string } }
 
 export function useSortedPlayers(players: Ref<Player[]>, scores: Ref<ScoreMap>) {
   const sortColumn = ref<SortColumn>('name')
   const sortDirection = ref<SortDirection>('asc')
 
-  const totalScore = (playerId: string): number => {
-    const s = scores.value[playerId] || {}
-    return Object.values(s)
-      .map((n) => parseInt(String(n)) || 0)
-      .reduce((a, b) => a + b, 0)
-  }
+  const standingsById = computed(() =>
+    Object.fromEntries(standings(players.value, scores.value).map((row) => [row.id, row])),
+  )
 
-  const averageScore = (playerId: string): string => {
-    const s = scores.value[playerId] || {}
-    const values = Object.values(s)
-      .map((n) => parseInt(String(n)))
-      .filter((n) => !isNaN(n))
-    return values.length ? (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1) : '–'
-  }
+  const statsFor = (playerId: string) =>
+    standingsById.value[playerId] ?? playerStandings(scores.value, playerId)
+
+  const totalScore = (playerId: string): number => statsFor(playerId).total
+
+  const averageScore = (playerId: string): string => formatAverage(statsFor(playerId).average)
 
   const sortedPlayers = computed<Player[]>(() => {
     return [...players.value].sort((a, b) => {
@@ -33,11 +30,11 @@ export function useSortedPlayers(players: Ref<Player[]>, scores: Ref<ScoreMap>) 
         aVal = a.name.toLowerCase()
         bVal = b.name.toLowerCase()
       } else if (sortColumn.value === 'total') {
-        aVal = totalScore(a.id)
-        bVal = totalScore(b.id)
+        aVal = statsFor(a.id).total
+        bVal = statsFor(b.id).total
       } else {
-        aVal = parseFloat(averageScore(a.id)) || 0
-        bVal = parseFloat(averageScore(b.id)) || 0
+        aVal = statsFor(a.id).average ?? 0
+        bVal = statsFor(b.id).average ?? 0
       }
 
       if (aVal < bVal) return sortDirection.value === 'asc' ? -1 : 1
