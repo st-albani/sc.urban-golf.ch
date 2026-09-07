@@ -59,7 +59,8 @@ frontend/
 │   │   └── pwa/                     PWAInstallBanner, PWAUpdateDialog
 │   ├── composables/                 useGamesDetailData, useSortedPlayers, useOfflineSync,
 │   │                                useThemeMode, usePlayerColors, useViewMode, …
-│   ├── stores/syncQueue.ts          Offline-Queue (Pinia + useLocalStorage)
+│   ├── stores/scoreWriter.ts        Score-Schreibpfad: write/flush, Offline-Queue,
+│   │                                Dedup, Reconnect (Pinia + useLocalStorage)
 │   ├── services/api.ts              HTTP-Client mit Retry
 │   ├── locales/{de,en,fr,nl}.json   i18n
 │   ├── assets/tokens.css            Design-Tokens (Tailwind @theme + semantische Vars)
@@ -128,7 +129,9 @@ bevor du Farben, Spacing oder Typo anfasst.
 
 ## State / Daten
 
-- **Pinia** nur für echten globalen State. Aktuell: `syncQueue`.
+- **Pinia** nur für echten globalen State. U.a. `scoreWriter` — der einzige
+  Schreibpfad für Scores (`write()` / `flush()`); Queue, Netzstatus und
+  Reconnect-Handling liegen dahinter.
 - Daten die zu einer Route gehören → **Composable + Provide/Inject**. Siehe
   `useGamesDetailData` + `gamesDetailKey` in [src/types/index.ts](src/types/index.ts).
 - **API** über [src/services/api.ts](src/services/api.ts) — Axios mit exponential

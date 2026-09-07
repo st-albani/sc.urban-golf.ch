@@ -15,11 +15,11 @@ import SyncStatusIndicator from '@/components/layout/SyncStatusIndicator.vue'
 import AuthSheet from '@/components/auth/AuthSheet.vue'
 import PWAUpdateDialog from '@/components/pwa/PWAUpdateDialog.vue'
 import PWAInstallBanner from '@/components/pwa/PWAInstallBanner.vue'
-import { useScoreSyncStore } from '@/stores/scoreSync'
+import { useScoreWriterStore } from '@/stores/scoreWriter'
 import { useThemeMode } from '@/composables/useThemeMode'
 import { useAuthStore } from '@/stores/auth'
 
-useScoreSyncStore().installNetworkWatcher()
+useScoreWriterStore().installNetworkWatcher()
 useThemeMode()
 // Bestehende Session (optional) beim Start wiederherstellen.
 void useAuthStore().loadMe()

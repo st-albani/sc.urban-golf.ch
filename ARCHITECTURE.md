@@ -59,8 +59,9 @@ sc.urban-golf.ch/
 - **Composables** statt zentraler Stores für Game/Score-Daten. Siehe z.B.
   [useGamesDetailData](frontend/src/composables/useGamesDetailData.ts),
   [useGamesSummaryData](frontend/src/composables/useGamesSummaryData.ts).
-- **Pinia** wird gezielt für echten geteilten State verwendet — aktuell nur
-  [syncQueue](frontend/src/stores/syncQueue.ts) (Offline-Queue, Dedup).
+- **Pinia** wird gezielt für echten geteilten State verwendet — u.a.
+  [scoreWriter](frontend/src/stores/scoreWriter.ts) (Score-Schreibpfad inkl.
+  Offline-Queue, Dedup).
 - **API-Service** [services/api.ts](frontend/src/services/api.ts) kapselt Axios +
   Retry + Typings.
 
@@ -70,19 +71,23 @@ sc.urban-golf.ch/
 User tippt + / – / Keypad
         │
         ▼
- useOfflineSync.saveScore()
+ scoreWriter.write()
         │
-   isOnline?
-      /   \
-    ja    nein
-    │      │
-    │      └─▶ syncQueue.enqueue()  (persisted via useLocalStorage)
-    ▼
- axios.post /api/scores  (mit Retry + exp. Backoff)
+        ├─▶ vormerken (persisted via useLocalStorage)   ← passiert IMMER
+        │
+        └─▶ online? ─ ja ─▶ scoreWriter.flush()
+                             └─▶ axios.post /api/scores  (Retry + exp. Backoff)
+                                  └─ Erfolg? Eintrag weg : Eintrag bleibt liegen
 ```
 
-Bei Wiederverbindung (`useOnline` aus @vueuse/core) wird die Queue automatisch
-geflusht. Dedup per (game, player, hole) — der neueste Wert gewinnt.
+Der Schreibpfad ist durable by construction: ein Score wird vorgemerkt, bevor
+irgendetwas ans Netz geht — ein fehlgeschlagener Request (offline, Captive
+Portal, 5xx, Rate-Limit) verliert ihn deshalb nie. `write()` wirft nicht.
+
+Bei Wiederverbindung (`useOnline` aus @vueuse/core), beim Start, bei Rückkehr
+aus dem Hintergrund und alle 30 s wird nachgeliefert — der Watcher dafür sitzt
+im Store, nicht in einer Komponente. Dedup per (game, player, hole) — der
+neueste Wert gewinnt. Aufrufer sehen nur `write()` und `flush()`.
 
 ### PWA / Service-Worker
 

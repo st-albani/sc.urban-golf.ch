@@ -37,7 +37,7 @@ Vitest mit `happy-dom`. Tests liegen entweder neben dem Quellfile
 - `composables/useSortedPlayers` — Sortier- und Stats-Logik
 - `composables/useViewMode`      — View-Preference mit localStorage
 - `composables/useOfflineSync`   — Queue-Flush, Retry
-- `stores/syncQueue`             — Dedup, enqueue, remove
+- `stores/scoreWriter`           — durables write()/flush(), Dedup, Persistenz
 - `utils/scoreHeatmap`           — Farb-Klassifikation relativ zum Loch-Ø
 - `utils/format`                 — String-Kürzung, Date-Format
 - `services/api`                 — HTTP-Wrapper

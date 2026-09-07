@@ -21,16 +21,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { useOnline } from '@vueuse/core'
 import { ArrowPathIcon, SignalSlashIcon } from '@heroicons/vue/24/outline'
-import { useSyncQueueStore } from '@/stores/syncQueue'
+import { useScoreWriterStore } from '@/stores/scoreWriter'
 import { useSyncStatus } from '@/composables/useSyncStatus'
 
 const { t } = useI18n()
-const isOnline = useOnline()
-const queueStore = useSyncQueueStore()
+const writer = useScoreWriterStore()
 
-const pending = computed(() => queueStore.queue.length)
+const isOnline = computed(() => writer.isOnline)
+const pending = computed(() => writer.pendingCount)
 const { tone, visible } = useSyncStatus(isOnline, pending)
 
 const icon = computed(() => (tone.value === 'syncing' ? ArrowPathIcon : SignalSlashIcon))

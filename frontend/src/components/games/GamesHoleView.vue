@@ -201,7 +201,7 @@
 import { ref, computed, onMounted, onBeforeUnmount, watch, inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
-import { useScoreSyncStore } from '@/stores/scoreSync'
+import { useScoreWriterStore } from '@/stores/scoreWriter'
 import { usePlayerColors } from '@/composables/usePlayerColors'
 import { useHoleCompletion } from '@/composables/useHoleCompletion'
 import { gamesDetailKey } from '@/types'
@@ -238,7 +238,7 @@ watch(hole, (h) => {
 
 const context = inject(gamesDetailKey)!
 const { players, scores, holes, gameName, visibility, lockedScores } = context
-const { saveScore: saveScoreOffline } = useScoreSyncStore()
+const { write: writeScore } = useScoreWriterStore()
 const { colorMap } = usePlayerColors(players)
 const { hasScore, holeState } = useHoleCompletion(players, scores)
 
@@ -435,21 +435,21 @@ async function runSave(lockKey: string) {
     // holes-Liste auf — ein "weitergeblättertes" Loch OHNE Score erscheint
     // weder in der Scorecard noch im Pill-Strip.
     //
-    // Massgeblich ist die Erfassung, nicht die Server-Antwort: saveScore legt
-    // den Wert immer in der Sync-Queue ab und stellt ihn spätestens beim
-    // nächsten Retry zu. Früher hing das Loch an einem erfolgreichen Request —
-    // schlug der fehl, verschwand es spurlos aus der Runde.
+    // Massgeblich ist die Erfassung, nicht die Server-Antwort: write() merkt
+    // den Wert immer vor und stellt ihn spätestens beim nächsten Retry zu.
+    // Früher hing das Loch an einem erfolgreichen Request — schlug der fehl,
+    // verschwand es spurlos aus der Runde.
     if (Number.isInteger(h) && !holes.value.includes(h)) {
       holes.value = [...holes.value, h].sort((a, b) => a - b)
     }
-    await saveScoreOffline({
+    await writeScore({
       game_id: gameId.value,
       player_id: playerId,
       hole: h,
       strokes: Number(scores.value[playerId][h]),
     })
   } catch (err) {
-    // saveScore wirft per Vertrag nicht — hier landet nur Unerwartetes. Ohne
+    // write() wirft per Vertrag nicht — hier landet nur Unerwartetes. Ohne
     // diesen Zweig würde es als Unhandled Rejection verpuffen.
     console.error('Score-Save fehlgeschlagen:', err)
   } finally {
