@@ -125,6 +125,24 @@ aushebeln.
 
 Siehe [.github/workflows/ci.yml](.github/workflows/ci.yml).
 
+### Grün heisst noch nicht mergebar
+
+`CI Green` ist nur die Status-Check-Hälfte. Auf `main` liegen **zwei** aktive
+Rulesets — *Protect main branch* und *Enforce PR to merge* — und beide stellen
+zusätzlich eine `pull_request`-Rule mit **1 Approval** und aufgelösten
+Review-Threads (*Enforce PR to merge* obendrein mit
+`require_last_push_approval`). Ein PR mit vier grünen Jobs bleibt also
+unmergebar, bis ein Mensch approved.
+
+Genau dieses Requirement — nicht ein roter Check — ist der Grund, warum
+Dependabot-PRs liegenbleiben und der Job „Merge a green Dependabot patch bump"
+mit `the base branch policy prohibits the merge` scheitert. Drei Sackgassen,
+damit sie niemand erneut probiert: `GITHUB_TOKEN` darf keine Reviews abgeben;
+das vom Fehler vorgeschlagene `--auto` scheitert ebenfalls, weil
+`allow_auto_merge` auf Repo-Ebene `false` ist; und das Approval aus nur einem
+der beiden Rulesets zu entfernen bringt nichts, weil das andere es ebenfalls
+stellt.
+
 ## Wenn du hier fertig bist
 
 1. Commit-Message im Imperativ, kurz ("Fix", "Add", "Update").
