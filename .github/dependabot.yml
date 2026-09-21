@@ -16,6 +16,16 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    # Majors eine Woche zurückhalten: ein Major erscheint meist bevor die Pakete,
+    # die exakt darauf peeren, überhaupt nachgezogen haben — die Woche lässt die
+    # Familie vollständig werden, bevor der PR aufgeht. Der eine Tag auf Minor/Patch
+    # wartet nur den Floor ab, den pnpm >= 11 mit minimumReleaseAge (24 h) ohnehin
+    # beim Install erzwingt. Alle drei Keys explizit: ein weggelassenes
+    # default-days verhält sich beobachtet nicht wie dokumentiert.
+    cooldown:
+      semver-major-days: 7
+      semver-minor-days: 1
+      semver-patch-days: 1
     # Minor/Patch gebündelt, damit nicht jede Woche ein Dutzend Lockfile-PRs
     # gegeneinander konfligiert. Majors kommen einzeln — die wollen wir bewusst prüfen.
     groups:
@@ -36,6 +46,19 @@ updates:
         patterns: ['*']
         update-types: ['patch']
       npm-minor:
+        patterns: ['*']
+        update-types: ['minor']
+      # Eigene Spuren für Advisories: applies-to steht per Default auf
+      # version-updates, alle Gruppen oben sind für Security-Updates also taub und
+      # jeder Alert käme als einzelner PR. Nach Update-Type getrennt aus demselben
+      # Grund wie die Kataloge — damit ein reiner Patch-PR auch als "patch"
+      # gemeldet wird und sich selbst mergen kann.
+      npm-security-patch:
+        applies-to: security-updates
+        patterns: ['*']
+        update-types: ['patch']
+      npm-security-minor:
+        applies-to: security-updates
         patterns: ['*']
         update-types: ['minor']
 
