@@ -395,6 +395,30 @@ describe('GET /games/:id', () => {
     })
 
     expect(res.statusCode).toBe(400)
+    expect(res.json().error).toBe('Validation failed')
+  })
+
+  it('rejects an id with forbidden characters before the handler runs', async () => {
+    const client = createMockClient(() => ({ rows: [], rowCount: 0 }))
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/game!!!!!!!!!!',
+    })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error).toBe('Validation failed')
+    expect(client.query).not.toHaveBeenCalled()
+  })
+
+  it('rejects an overlong id', async () => {
+    const res = await app.inject({
+      method: 'GET',
+      url: `/${'a'.repeat(31)}`,
+    })
+
+    expect(res.statusCode).toBe(400)
+    expect(res.json().error).toBe('Validation failed')
   })
 })
 
@@ -430,11 +454,15 @@ describe('GET /games/:id/players', () => {
   })
 
   it('returns 400 for invalid game id', async () => {
+    const client = createMockClient(() => ({ rows: [] }))
+
     const res = await app.inject({
       method: 'GET',
       url: '/bad/players',
     })
 
     expect(res.statusCode).toBe(400)
+    expect(res.json().error).toBe('Validation failed')
+    expect(client.query).not.toHaveBeenCalled()
   })
 })

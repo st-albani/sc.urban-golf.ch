@@ -65,6 +65,17 @@ const scoreRowSchema = {
 };
 
 export const schemas = Object.freeze({
+  // Route-Params einer `:id`-Route. Die Prüfung liegt damit am Framework-Seam:
+  // Fastify lehnt eine unpassende ID ab, bevor der Handler läuft (400 über den
+  // gemeinsamen errorHandler), statt sie in jedem Handler von Hand zu prüfen.
+  idParams: {
+    params: {
+      type: 'object',
+      required: ['id'],
+      properties: { id: idSchema },
+    },
+  },
+
   postPlayer: {
     body: {
       type: 'object',

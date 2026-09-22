@@ -1,4 +1,4 @@
-export { VALIDATION, ID_PATTERN, EMAIL_PATTERN } from '@urban-golf/contract'
+export { VALIDATION, ID_PATTERN, EMAIL_PATTERN, isValidId } from '@urban-golf/contract'
 
 export const API_ROUTES = {
   GAMES: '/games',

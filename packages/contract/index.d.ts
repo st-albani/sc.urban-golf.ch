@@ -21,11 +21,13 @@ export type JSONSchema = Record<string, unknown>;
 
 export interface RouteSchema {
   body?: JSONSchema;
+  params?: JSONSchema;
   querystring?: JSONSchema;
   response?: Record<string | number, JSONSchema>;
 }
 
 export interface Schemas {
+  readonly idParams: RouteSchema;
   readonly postPlayer: RouteSchema;
   readonly getPlayers: RouteSchema;
   readonly postGame: RouteSchema;
