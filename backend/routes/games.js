@@ -147,12 +147,9 @@ export default async function (fastify, _opts) {
     }
   });
 
-  // Spielname via ID abrufen — Path-Param wird ohne JSON-Schema gegen
-  // ID_PATTERN aus dem Contract validiert (Fastify-Schemas decken keine
-  // route-params nicht ab, wenn die Route ohne :id-schema gemeldet wird).
-  fastify.get('/:id', async (req, reply) => {
+  // Spielname via ID abrufen
+  fastify.get('/:id', { schema: schemas.idParams }, async (req, reply) => {
     const gameId = req.params.id;
-    if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });
 
     // Phase 1 (ungelistet): der Direktzugriff bleibt offen — visibility und ein
     // is_owner-Flag werden mitgeliefert, damit das UI private Runden kennzeichnen
@@ -171,9 +168,8 @@ export default async function (fastify, _opts) {
   });
 
   // Spieler eines Spiels abrufen
-  fastify.get('/:id/players', async (req, reply) => {
+  fastify.get('/:id/players', { schema: schemas.idParams }, async (req, reply) => {
     const gameId = req.params.id;
-    if (!isValidId(gameId)) return reply.code(400).send({ error: 'Invalid game ID' });
 
     const rows = await query(
       // registered/avatar: markiert kanonische (Konto-)Identitäten, damit die

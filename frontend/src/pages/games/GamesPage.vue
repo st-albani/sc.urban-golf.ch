@@ -92,15 +92,13 @@ import { fetchScores } from '@/services/api'
 import { gamesDetailKey, type ScoreMap } from '@/types'
 import { mergeServerScores, scoresToMap } from '@/utils/mergeScores'
 import { shortGameName } from '@/utils/format'
-import { VALIDATION } from '@/constants'
+import { VALIDATION, isValidId } from '@/constants'
 
 const route = useRoute()
 const { t } = useI18n()
 const shareOpen = ref(false)
 const gameId = computed(() => route.params.gameId as string)
-const hasValidGameId = computed(() =>
-  typeof gameId.value === 'string' && /^[a-zA-Z0-9_-]{10,30}$/.test(gameId.value)
-)
+const hasValidGameId = computed(() => isValidId(gameId.value))
 const isHoleView = computed(() => 'holeId' in route.params)
 // Read-only-Zuschauer: ?spectator blendet alle Schreib-Einstiege aus.
 const isSpectator = computed(() => route.query.spectator !== undefined)
