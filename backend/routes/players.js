@@ -1,5 +1,5 @@
-import { query } from '../db/pg.js';
 import { schemas } from '@urban-golf/contract';
+import { listPlayers, upsertPlayer, searchRegisteredPlayers } from '../persistence/players.js';
 
 export default async function (fastify, _opts) {
   // Spieler erstellen oder aktualisieren (POST + UPSERT)
@@ -14,24 +14,13 @@ export default async function (fastify, _opts) {
   }, async (req, reply) => {
     const { id, name } = req.body;
 
-    try {
-      await query(
-        `INSERT INTO players (id, name)
-         VALUES ($1, $2)
-         ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name`,
-        [id, name]
-      );
-      return reply.code(200).send({ id, name, status: 'upserted' });
-    } catch (err) {
-      fastify.log.error(err);
-      return reply.code(500).send({ error: 'Database error' });
-    }
+    await upsertPlayer({ id, name });
+    return reply.code(200).send({ id, name, status: 'upserted' });
   });
 
   // Alle Spieler abrufen
   fastify.get('/', async (_req, reply) => {
-    const rows = await query('SELECT * FROM players ORDER BY name');
-    return reply.send(rows);
+    return reply.send(await listPlayers());
   });
 
   // Registrierte Spieler suchen (Konten mit kanonischer Identität, d. h.
@@ -42,20 +31,7 @@ export default async function (fastify, _opts) {
   }, async (req, reply) => {
     const q = String(req.query.q || '').trim();
     if (q.length < 2) return reply.send({ players: [] });
-    try {
-      const rows = await query(
-        `SELECT p.id, p.name, a.avatar
-         FROM accounts a
-         JOIN players p ON p.id = a.player_id
-         WHERE a.display_name IS NOT NULL AND p.name ILIKE $1
-         ORDER BY p.name
-         LIMIT 10`,
-        [`%${q}%`],
-      );
-      return reply.send({ players: rows });
-    } catch (err) {
-      fastify.log.error(err);
-      return reply.code(500).send({ error: 'Database error' });
-    }
+
+    return reply.send({ players: await searchRegisteredPlayers(q) });
   });
 }

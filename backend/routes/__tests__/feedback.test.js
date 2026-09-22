@@ -1,9 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
 
-import { pgMock } from './_pgMock.js'
-
-vi.mock('../../db/pg.js', () => pgMock(vi))
+// Handler-Ebene: Status, Response-Shape, Validierung und der Aufruf der
+// Persistenz-Operation. Das SQL gehört dem Modul und wird dort getestet.
+vi.mock('../../persistence/feedback.js', () => ({
+  saveFeedback: vi.fn(),
+}))
 
 vi.mock('nodemailer', () => ({
   default: {
@@ -13,18 +15,9 @@ vi.mock('nodemailer', () => ({
   },
 }))
 
-import { getClient } from '../../db/pg.js'
+import { saveFeedback } from '../../persistence/feedback.js'
 import feedbackRoutes from '../feedback.js'
 import { handleError } from '../../utils/errorHandler.js'
-
-function createMockClient(queryImpl) {
-  const client = {
-    query: vi.fn(queryImpl || (() => ({ rows: [], rowCount: 0 }))),
-    release: vi.fn(),
-  }
-  getClient.mockResolvedValue(client)
-  return client
-}
 
 function buildApp() {
   const app = Fastify({ logger: false })
@@ -33,18 +26,18 @@ function buildApp() {
   return app
 }
 
+let app
+
+beforeEach(() => {
+  app = buildApp()
+  saveFeedback.mockReset()
+})
+
+afterEach(() => app.close())
+
 describe('POST /feedback', () => {
-  let app
-
-  beforeEach(() => {
-    app = buildApp()
-    getClient.mockReset()
-  })
-
-  afterEach(() => app.close())
-
   it('saves feedback and returns success', async () => {
-    const client = createMockClient(() => ({ rows: [] }))
+    saveFeedback.mockResolvedValue(undefined)
 
     const res = await app.inject({
       method: 'POST',
@@ -54,15 +47,16 @@ describe('POST /feedback', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.json().success).toBe(true)
-    expect(client.query).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO feedback'),
-      [5, 'Great app!', null, null],
-    )
-    expect(client.release).toHaveBeenCalled()
+    expect(saveFeedback).toHaveBeenCalledWith({
+      rating: 5,
+      message: 'Great app!',
+      name: undefined,
+      email: undefined,
+    })
   })
 
-  it('saves feedback with optional name and email', async () => {
-    const client = createMockClient(() => ({ rows: [] }))
+  it('forwards an optional name and email', async () => {
+    saveFeedback.mockResolvedValue(undefined)
 
     const res = await app.inject({
       method: 'POST',
@@ -71,10 +65,12 @@ describe('POST /feedback', () => {
     })
 
     expect(res.statusCode).toBe(200)
-    expect(client.query).toHaveBeenCalledWith(
-      expect.stringContaining('INSERT INTO feedback'),
-      [4, 'Nice', 'Alice', 'alice@example.com'],
-    )
+    expect(saveFeedback).toHaveBeenCalledWith({
+      rating: 4,
+      message: 'Nice',
+      name: 'Alice',
+      email: 'alice@example.com',
+    })
   })
 
   it('returns 400 for invalid feedback', async () => {
@@ -86,22 +82,17 @@ describe('POST /feedback', () => {
 
     expect(res.statusCode).toBe(400)
     expect(res.json().error).toBe('Validation failed')
+    expect(saveFeedback).not.toHaveBeenCalled()
   })
 
   it('returns 400 for empty body', async () => {
-    const res = await app.inject({
-      method: 'POST',
-      url: '/',
-      payload: {},
-    })
+    const res = await app.inject({ method: 'POST', url: '/', payload: {} })
 
     expect(res.statusCode).toBe(400)
   })
 
-  it('returns 500 on DB error', async () => {
-    createMockClient(() => {
-      throw new Error('DB write failed')
-    })
+  it('returns 500 through the shared error handler when the write fails', async () => {
+    saveFeedback.mockRejectedValue(new Error('DB write failed'))
 
     const res = await app.inject({
       method: 'POST',
@@ -110,6 +101,6 @@ describe('POST /feedback', () => {
     })
 
     expect(res.statusCode).toBe(500)
-    expect(res.json().error).toBe('Failed to save feedback')
+    expect(res.json().error).toBe('Internal server error')
   })
 })

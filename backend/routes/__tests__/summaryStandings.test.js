@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
 import fastifyCookie from '@fastify/cookie'
 
-import { pgMock } from './_pgMock.js'
+import { pgMock } from '../../test/helpers/pgMock.js'
 
 vi.mock('../../db/pg.js', () => pgMock(vi))
 
@@ -12,7 +12,7 @@ vi.mock('../../utils/mailer.js', () => ({
 }))
 
 import { getClient } from '../../db/pg.js'
-import gameRoutes from '../games.js'
+import { listGamesSummary } from '../../persistence/games.js'
 import authRoutes from '../auth.js'
 import { handleError } from '../../utils/errorHandler.js'
 import { SESSION_COOKIE } from '../../utils/auth.js'
@@ -59,11 +59,9 @@ describe('summary read-model rounding', () => {
   afterEach(() => app?.close())
 
   it('rounds the average in SQL with the decimals from the standings contract', async () => {
-    app = await buildApp(gameRoutes)
     const client = createMockClient([['SELECT COUNT(*)', { rows: [{ count: '0' }] }]])
 
-    const res = await app.inject({ method: 'GET', url: '/summary' })
-    expect(res.statusCode).toBe(200)
+    await listGamesSummary()
 
     const sql = sqlContaining(client, 'player_stats AS')
     expect(sql).toContain(`${avgStrokesSql('s.strokes')} AS avg`)

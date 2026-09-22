@@ -1,22 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
 
-import { pgMock } from './_pgMock.js'
+// Handler-Ebene: Status, Response-Shape, Validierung und der Aufruf der
+// Persistenz-Operation. Das SQL gehört dem Modul und wird dort getestet.
+vi.mock('../../persistence/players.js', () => ({
+  listPlayers: vi.fn(),
+  upsertPlayer: vi.fn(),
+  searchRegisteredPlayers: vi.fn(),
+}))
 
-vi.mock('../../db/pg.js', () => pgMock(vi))
-
-import { getClient } from '../../db/pg.js'
+import { listPlayers, upsertPlayer, searchRegisteredPlayers } from '../../persistence/players.js'
 import playerRoutes from '../players.js'
 import { handleError } from '../../utils/errorHandler.js'
-
-function createMockClient(queryImpl) {
-  const client = {
-    query: vi.fn(queryImpl || (() => ({ rows: [], rowCount: 0 }))),
-    release: vi.fn(),
-  }
-  getClient.mockResolvedValue(client)
-  return client
-}
 
 function buildApp() {
   const app = Fastify({ logger: false })
@@ -25,18 +20,20 @@ function buildApp() {
   return app
 }
 
+let app
+
+beforeEach(() => {
+  app = buildApp()
+  listPlayers.mockReset()
+  upsertPlayer.mockReset()
+  searchRegisteredPlayers.mockReset()
+})
+
+afterEach(() => app.close())
+
 describe('POST /players', () => {
-  let app
-
-  beforeEach(() => {
-    app = buildApp()
-    getClient.mockReset()
-  })
-
-  afterEach(() => app.close())
-
   it('upserts a player', async () => {
-    createMockClient(() => ({ rows: [] }))
+    upsertPlayer.mockResolvedValue(undefined)
 
     const res = await app.inject({
       method: 'POST',
@@ -46,6 +43,7 @@ describe('POST /players', () => {
 
     expect(res.statusCode).toBe(200)
     expect(res.json()).toEqual({ id: 'player1234567890', name: 'Alice', status: 'upserted' })
+    expect(upsertPlayer).toHaveBeenCalledWith({ id: 'player1234567890', name: 'Alice' })
   })
 
   it('returns 400 for invalid player', async () => {
@@ -57,12 +55,11 @@ describe('POST /players', () => {
 
     expect(res.statusCode).toBe(400)
     expect(res.json().error).toBe('Validation failed')
+    expect(upsertPlayer).not.toHaveBeenCalled()
   })
 
-  it('returns 500 on DB error', async () => {
-    createMockClient(() => {
-      throw new Error('Connection refused')
-    })
+  it('returns 500 through the shared error handler when the write fails', async () => {
+    upsertPlayer.mockRejectedValue(new Error('Connection refused'))
 
     const res = await app.inject({
       method: 'POST',
@@ -71,32 +68,18 @@ describe('POST /players', () => {
     })
 
     expect(res.statusCode).toBe(500)
-    expect(res.json().error).toBe('Database error')
+    expect(res.json().error).toBe('Internal server error')
   })
 })
 
 describe('GET /players', () => {
-  let app
-
-  beforeEach(() => {
-    app = buildApp()
-    getClient.mockReset()
-  })
-
-  afterEach(() => app.close())
-
   it('returns all players', async () => {
-    createMockClient(() => ({
-      rows: [
-        { id: 'p1234567890123', name: 'Alice' },
-        { id: 'p2345678901234', name: 'Bob' },
-      ],
-    }))
+    listPlayers.mockResolvedValue([
+      { id: 'p1234567890123', name: 'Alice' },
+      { id: 'p2345678901234', name: 'Bob' },
+    ])
 
-    const res = await app.inject({
-      method: 'GET',
-      url: '/',
-    })
+    const res = await app.inject({ method: 'GET', url: '/' })
 
     expect(res.statusCode).toBe(200)
     expect(res.json()).toHaveLength(2)
@@ -105,36 +88,21 @@ describe('GET /players', () => {
 })
 
 describe('GET /players/search', () => {
-  let app
-
-  beforeEach(() => {
-    app = buildApp()
-    getClient.mockReset()
-  })
-
-  afterEach(() => app.close())
-
   it('returns matching registered players', async () => {
-    const client = createMockClient(() => ({
-      rows: [{ id: 'canon-anna-01', name: 'Anna Meier', avatar: null }],
-    }))
+    searchRegisteredPlayers.mockResolvedValue([{ id: 'canon-anna-01', name: 'Anna Meier', avatar: null }])
 
     const res = await app.inject({ method: 'GET', url: '/search?q=Anna' })
 
     expect(res.statusCode).toBe(200)
-    expect(res.json().players).toHaveLength(1)
-    expect(res.json().players[0].name).toBe('Anna Meier')
-    // Nur registrierte (Konto-)Identitäten: die Query joint accounts.
-    const call = client.query.mock.calls.find((c) => c[0].includes('JOIN players p ON p.id = a.player_id'))
-    expect(call).toBeDefined()
-    expect(call[1]).toEqual(['%Anna%'])
+    expect(res.json().players).toEqual([{ id: 'canon-anna-01', name: 'Anna Meier', avatar: null }])
+    expect(searchRegisteredPlayers).toHaveBeenCalledWith('Anna')
   })
 
   it('returns empty for a too-short query without hitting the db', async () => {
-    const client = createMockClient(() => ({ rows: [] }))
     const res = await app.inject({ method: 'GET', url: '/search?q=A' })
+
     expect(res.statusCode).toBe(200)
     expect(res.json().players).toEqual([])
-    expect(client.query).not.toHaveBeenCalled()
+    expect(searchRegisteredPlayers).not.toHaveBeenCalled()
   })
 })

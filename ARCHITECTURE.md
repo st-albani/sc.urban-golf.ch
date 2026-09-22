@@ -136,11 +136,16 @@ backend/
 │   ├── index.js                pg-Pool-Singleton
 │   ├── init/schema.sql         Schema für Docker-Init (nur auf leerer DB)
 │   └── migrations/             (optional) Migration-Scripts
-├── routes/
+├── routes/                     dünne HTTP-Adapter: parsen → Modul rufen → antworten
 │   ├── games.js                /games, /games/:id, /games/summary, …
 │   ├── players.js              /players
 │   ├── scores.js               /scores?game_id=… (POST upsert)
 │   └── feedback.js             /feedback (Mail via Brevo/SMTP)
+├── persistence/                SQL, Pagination & Transaktionen pro Konzept
+│   ├── games.js                Listen-/Summary-Read-Models, Upsert mit Spielern
+│   ├── players.js
+│   ├── scores.js
+│   └── feedback.js
 ├── utils/
 │   └── …
 └── test/                       Vitest-Tests
