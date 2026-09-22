@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import Fastify from 'fastify'
 import fastifyCookie from '@fastify/cookie'
 
-import { pgMock } from './_pgMock.js'
+import { pgMock } from '../../test/helpers/pgMock.js'
 
 vi.mock('../../db/pg.js', () => pgMock(vi))
 

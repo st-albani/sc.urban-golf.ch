@@ -1,6 +1,6 @@
-// Shared mock factory for backend/db/pg.js. Used by route tests to swap
-// the connection layer for a per-test in-memory client without spinning
-// up a real Postgres pool.
+// Shared mock factory for backend/db/pg.js. Used by persistence- and route
+// tests to swap the connection layer for a per-test in-memory client without
+// spinning up a real Postgres pool.
 //
 // Pass to `vi.mock` as the second argument:
 //

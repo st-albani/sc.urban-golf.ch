@@ -1,5 +1,5 @@
-import { query } from '../db/pg.js';
 import { schemas } from '@urban-golf/contract';
+import { listScores, saveScore } from '../persistence/scores.js';
 
 export default async function (fastify, _opts) {
   fastify.get('/', {
@@ -11,16 +11,7 @@ export default async function (fastify, _opts) {
       },
     },
   }, async (req, reply) => {
-    const { game_id: gameId } = req.query;
-
-    const rows = await query(
-      `SELECT s.*, p.name as player_name FROM scores s
-       JOIN players p ON s.player_id = p.id
-       WHERE s.game_id = $1
-       ORDER BY s.hole ASC, p.name ASC`,
-      [gameId]
-    );
-    return reply.send(rows);
+    return reply.send(await listScores(req.query.game_id));
   });
 
   fastify.post('/', {
@@ -39,14 +30,7 @@ export default async function (fastify, _opts) {
   }, async (req, reply) => {
     const { game_id, player_id, strokes, hole } = req.body;
 
-    const rows = await query(
-      `INSERT INTO scores (game_id, player_id, hole, strokes)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (game_id, player_id, hole)
-       DO UPDATE SET strokes = EXCLUDED.strokes
-       RETURNING id`,
-      [game_id, player_id, hole, strokes]
-    );
-    return reply.code(200).send({ id: rows[0].id, game_id, player_id, hole, strokes });
+    const saved = await saveScore({ gameId: game_id, playerId: player_id, hole, strokes });
+    return reply.code(200).send({ id: saved.id, game_id, player_id, hole, strokes });
   });
 }

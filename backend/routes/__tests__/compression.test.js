@@ -13,7 +13,7 @@ import Fastify from 'fastify'
 import compress from '@fastify/compress'
 import { gunzipSync, brotliDecompressSync } from 'node:zlib'
 
-import { pgMock } from './_pgMock.js'
+import { pgMock } from '../../test/helpers/pgMock.js'
 
 vi.mock('../../db/pg.js', () => pgMock(vi))
 

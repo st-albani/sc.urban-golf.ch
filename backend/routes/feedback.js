@@ -1,5 +1,5 @@
-import { query } from '../db/pg.js';
 import { schemas } from '@urban-golf/contract';
+import { saveFeedback } from '../persistence/feedback.js';
 import { sendMail, isMailConfigured } from '../utils/mailer.js';
 
 export default async function (fastify, _opts) {
@@ -14,16 +14,7 @@ export default async function (fastify, _opts) {
   }, async (request, reply) => {
     const { rating, message, name, email } = request.body;
 
-    try {
-      await query(
-        `INSERT INTO feedback (rating, message, name, email)
-         VALUES ($1, $2, $3, $4)`,
-        [rating, message, name || null, email || null]
-      );
-    } catch (err) {
-      request.log.error(err);
-      return reply.code(500).send({ error: 'Failed to save feedback' });
-    }
+    await saveFeedback({ rating, message, name, email });
 
     // Benachrichtigung senden (optional, darf nicht fehlschlagen)
     if (isMailConfigured() && process.env.ADMIN_EMAIL) {
