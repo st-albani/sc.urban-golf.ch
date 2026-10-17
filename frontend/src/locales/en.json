@@ -153,7 +153,12 @@
     "DisplayNamePlaceholder": "Your name",
     "NameHint": "Pick your display name — this is how you'll appear in your rounds.",
     "NameSaved": "Name saved.",
-    "MyStats": "My stats"
+    "MyStats": "My stats",
+    "PasskeySignIn": "Sign in with passkey",
+    "PasskeyFailed": "Passkey sign-in failed. Use the email code instead.",
+    "PasskeySetup": "Set up passkey",
+    "PasskeyAdded": "Passkey set up — from now on you can sign in within seconds.",
+    "PasskeySetupFailed": "Passkey could not be set up."
   },
   "Profile": {
     "Title": "Profile",

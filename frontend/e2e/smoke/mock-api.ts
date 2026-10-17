@@ -251,6 +251,59 @@ export async function installMockApi(page: Page, seed?: MockDataset) {
     }
     return route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'unauthenticated' }) })
   })
+  // Passkeys: die Mock-API prüft keine Signaturen, sie merkt sich nur, welche
+  // Credential-ID zu welchem Konto gehört. Die WebAuthn-Zeremonie selbst läuft
+  // im Browser gegen einen virtuellen Authenticator (siehe passkey-login.spec).
+  const passkeys = new Map<string, NonNullable<typeof authState.account>>()
+  const b64url = (s: string) => Buffer.from(s).toString('base64url')
+
+  await page.route('**/api/auth/passkey/register-options', (route) => {
+    if (!authState.account) {
+      return route.fulfill({ status: 401, contentType: 'application/json', body: JSON.stringify({ error: 'unauthenticated' }) })
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        challengeId: '00000000-0000-4000-8000-000000000001',
+        options: {
+          challenge: b64url('mock-registration-challenge'),
+          rp: { name: 'Urban Golf ScoreCard', id: 'localhost' },
+          user: { id: b64url(authState.account.id), name: authState.account.email, displayName: authState.account.email },
+          pubKeyCredParams: [{ alg: -7, type: 'public-key' }, { alg: -257, type: 'public-key' }],
+          timeout: 60000,
+          attestation: 'none',
+          excludeCredentials: [],
+          authenticatorSelection: { residentKey: 'required', requireResidentKey: true, userVerification: 'preferred' },
+        },
+      }),
+    })
+  })
+  await page.route('**/api/auth/passkey/register-verify', (route) => {
+    const payload = JSON.parse(route.request().postData() || '{}') as { response: { id: string } }
+    if (authState.account) passkeys.set(payload.response.id, { ...authState.account })
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
+  })
+  await page.route('**/api/auth/passkey/login-options', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        challengeId: '00000000-0000-4000-8000-000000000002',
+        options: { challenge: b64url('mock-authentication-challenge'), rpId: 'localhost', timeout: 60000, userVerification: 'preferred' },
+      }),
+    }),
+  )
+  await page.route('**/api/auth/passkey/login-verify', (route) => {
+    const payload = JSON.parse(route.request().postData() || '{}') as { response: { id: string } }
+    const owner = passkeys.get(payload.response.id)
+    if (!owner) {
+      return route.fulfill({ status: 400, contentType: 'application/json', body: JSON.stringify({ error: 'invalid_passkey' }) })
+    }
+    authState.account = { ...owner }
+    return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ account: authState.account }) })
+  })
+
   await page.route('**/api/auth/logout', (route) => {
     authState.account = null
     return route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true }) })
