@@ -153,7 +153,12 @@
     "DisplayNamePlaceholder": "Dein Name",
     "NameHint": "Wähle deinen Anzeigenamen — so erscheinst du in deinen Runden.",
     "NameSaved": "Name gespeichert.",
-    "MyStats": "Meine Statistik"
+    "MyStats": "Meine Statistik",
+    "PasskeySignIn": "Mit Passkey anmelden",
+    "PasskeyFailed": "Anmeldung mit Passkey fehlgeschlagen. Nutze stattdessen den E-Mail-Code.",
+    "PasskeySetup": "Passkey einrichten",
+    "PasskeyAdded": "Passkey eingerichtet — künftig meldest du dich damit in Sekunden an.",
+    "PasskeySetupFailed": "Passkey konnte nicht eingerichtet werden."
   },
   "Profile": {
     "Title": "Profil",

@@ -1,4 +1,10 @@
 import { schemas } from '@urban-golf/contract';
+import {
+  generateRegistrationOptions,
+  verifyRegistrationResponse,
+  generateAuthenticationOptions,
+  verifyAuthenticationResponse,
+} from '@simplewebauthn/server';
 import { query, queryOne, transaction } from '../db/pg.js';
 import { sendMail, isMailConfigured } from '../utils/mailer.js';
 import {
@@ -16,6 +22,7 @@ import {
   requireAuth,
 } from '../utils/auth.js';
 import { avgStrokesSql } from '../utils/standingsSql.js';
+import { WEBAUTHN_CHALLENGE_TTL_MS, webauthnConfig } from '../utils/webauthn.js';
 
 const toAccount = (r) => ({
   id: r.id,
@@ -61,6 +68,37 @@ async function ensureCanonicalPlayer(account) {
     );
     return updated.rows[0];
   });
+}
+
+async function startSession(reply, accountId) {
+  const token = generateSessionToken();
+  await query(
+    `INSERT INTO sessions (account_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
+    [accountId, hashToken(token), new Date(Date.now() + SESSION_TTL_MS)],
+  );
+  reply.setCookie(SESSION_COOKIE, token, sessionCookieOptions());
+}
+
+async function storeChallenge(type, challenge, accountId) {
+  await query(`DELETE FROM webauthn_challenges WHERE expires_at <= now()`);
+  const row = await queryOne(
+    `INSERT INTO webauthn_challenges (type, challenge, account_id, expires_at)
+     VALUES ($1, $2, $3, $4) RETURNING id`,
+    [type, challenge, accountId, new Date(Date.now() + WEBAUTHN_CHALLENGE_TTL_MS)],
+  );
+  return row.id;
+}
+
+// Löscht die Challenge beim Lesen — jede ist genau einmal verwendbar, auch
+// wenn die anschließende Verifikation scheitert.
+async function consumeChallenge(id, type, accountId) {
+  const row = await queryOne(
+    `DELETE FROM webauthn_challenges
+      WHERE id = $1 AND type = $2 AND account_id IS NOT DISTINCT FROM $3 AND expires_at > now()
+     RETURNING challenge`,
+    [id, type, accountId],
+  );
+  return row?.challenge ?? null;
 }
 
 export default async function (fastify, _opts) {
@@ -143,12 +181,7 @@ export default async function (fastify, _opts) {
         [email],
       );
 
-      const token = generateSessionToken();
-      await query(
-        `INSERT INTO sessions (account_id, token_hash, expires_at) VALUES ($1, $2, $3)`,
-        [account.id, hashToken(token), new Date(Date.now() + SESSION_TTL_MS)],
-      );
-      reply.setCookie(SESSION_COOKIE, token, sessionCookieOptions());
+      await startSession(reply, account.id);
 
       // Jedes eingeloggte Konto bekommt garantiert eine kanonische Identität,
       // damit es beim Erstellen eines Spiels automatisch als Spieler auftaucht.
@@ -173,6 +206,163 @@ export default async function (fastify, _opts) {
         return reply.send({ account: toAccount(updated) });
       }
       return reply.send({ account });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Passkey einrichten, Schritt 1: Registrierungs-Optionen für den Browser.
+  fastify.post('/passkey/register-options', {
+    preHandler: requireAuth,
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const { rpID, rpName } = webauthnConfig();
+    try {
+      const existing = await query(
+        `SELECT credential_id, transports FROM webauthn_credentials WHERE account_id = $1`,
+        [request.account.id],
+      );
+      const options = await generateRegistrationOptions({
+        rpName,
+        rpID,
+        userName: request.account.email,
+        userDisplayName: request.account.displayName || request.account.email,
+        userID: new TextEncoder().encode(request.account.id),
+        attestationType: 'none',
+        excludeCredentials: existing.map((c) => ({ id: c.credential_id, transports: c.transports ?? undefined })),
+        // Discoverable Credential, damit die Anmeldung ohne E-Mail-Eingabe klappt.
+        authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
+      });
+      const challengeId = await storeChallenge('registration', options.challenge, request.account.id);
+      return reply.send({ challengeId, options });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Passkey einrichten, Schritt 2: Antwort des Authenticators prüfen und speichern.
+  fastify.post('/passkey/register-verify', {
+    schema: schemas.postAuthPasskeyRegisterVerify,
+    preHandler: requireAuth,
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const { challengeId, response } = request.body;
+    const { rpID, origins } = webauthnConfig();
+    let expectedChallenge;
+    try {
+      expectedChallenge = await consumeChallenge(challengeId, 'registration', request.account.id);
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+    if (!expectedChallenge) return reply.code(400).send({ error: 'invalid_challenge' });
+
+    let verification;
+    try {
+      verification = await verifyRegistrationResponse({
+        response,
+        expectedChallenge,
+        expectedOrigin: origins,
+        expectedRPID: rpID,
+        requireUserVerification: false,
+      });
+    } catch (err) {
+      request.log.warn(err, 'Passkey-Registrierung abgelehnt');
+      return reply.code(400).send({ error: 'invalid_passkey' });
+    }
+    if (!verification.verified) return reply.code(400).send({ error: 'invalid_passkey' });
+
+    const { credential } = verification.registrationInfo;
+    try {
+      await query(
+        `INSERT INTO webauthn_credentials (account_id, credential_id, public_key, sign_count, transports)
+         VALUES ($1, $2, $3, $4, $5)
+         ON CONFLICT (credential_id) DO NOTHING`,
+        [request.account.id, credential.id, Buffer.from(credential.publicKey), credential.counter, credential.transports ?? null],
+      );
+      return reply.send({ ok: true });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Anmelden per Passkey, Schritt 1: Challenge ohne Account-Bezug (der
+  // Authenticator wählt den Passkey selbst, keine E-Mail nötig).
+  fastify.post('/passkey/login-options', {
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const { rpID } = webauthnConfig();
+    try {
+      const options = await generateAuthenticationOptions({ rpID, userVerification: 'preferred' });
+      const challengeId = await storeChallenge('authentication', options.challenge, null);
+      return reply.send({ challengeId, options });
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+  });
+
+  // Anmelden per Passkey, Schritt 2: Signatur prüfen, Sign-Count fortschreiben,
+  // Session anlegen — gleiches Ergebnis wie /verify-otp.
+  fastify.post('/passkey/login-verify', {
+    schema: schemas.postAuthPasskeyLoginVerify,
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+  }, async (request, reply) => {
+    const { challengeId, response } = request.body;
+    const { rpID, origins } = webauthnConfig();
+    let expectedChallenge, stored;
+    try {
+      expectedChallenge = await consumeChallenge(challengeId, 'authentication', null);
+      if (expectedChallenge) {
+        stored = await queryOne(
+          `SELECT id, account_id, credential_id, public_key, sign_count, transports
+             FROM webauthn_credentials WHERE credential_id = $1`,
+          [response.id],
+        );
+      }
+    } catch (err) {
+      request.log.error(err);
+      return reply.code(500).send({ error: 'Database error' });
+    }
+    if (!expectedChallenge) return reply.code(400).send({ error: 'invalid_challenge' });
+    if (!stored) return reply.code(400).send({ error: 'invalid_passkey' });
+
+    let verification;
+    try {
+      verification = await verifyAuthenticationResponse({
+        response,
+        expectedChallenge,
+        expectedOrigin: origins,
+        expectedRPID: rpID,
+        credential: {
+          id: stored.credential_id,
+          publicKey: new Uint8Array(stored.public_key),
+          counter: Number(stored.sign_count),
+          transports: stored.transports ?? undefined,
+        },
+        requireUserVerification: false,
+      });
+    } catch (err) {
+      request.log.warn(err, 'Passkey-Anmeldung abgelehnt');
+      return reply.code(400).send({ error: 'invalid_passkey' });
+    }
+    if (!verification.verified) return reply.code(400).send({ error: 'invalid_passkey' });
+
+    try {
+      await query(
+        `UPDATE webauthn_credentials SET sign_count = $2, last_used_at = now() WHERE id = $1`,
+        [stored.id, verification.authenticationInfo.newCounter],
+      );
+      let account = await queryOne(
+        `SELECT id, email, display_name, avatar, player_id FROM accounts WHERE id = $1`,
+        [stored.account_id],
+      );
+      await startSession(reply, account.id);
+      account = await ensureCanonicalPlayer(account);
+      return reply.send({ account: toAccount(account) });
     } catch (err) {
       request.log.error(err);
       return reply.code(500).send({ error: 'Database error' });
