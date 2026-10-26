@@ -289,6 +289,40 @@ ALTER TABLE ONLY public.sessions
     ADD CONSTRAINT fk_sessions_account FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
 
 --
+-- Passkeys (WebAuthn) als zweiter Login-Weg neben dem E-Mail-OTP
+--
+
+CREATE TABLE public.webauthn_credentials (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id uuid NOT NULL,
+    credential_id text NOT NULL UNIQUE,
+    public_key bytea NOT NULL,
+    sign_count bigint NOT NULL DEFAULT 0,
+    transports text[],
+    created_at timestamptz DEFAULT now(),
+    last_used_at timestamptz
+);
+
+CREATE INDEX idx_webauthn_credentials_account ON public.webauthn_credentials USING btree (account_id);
+
+ALTER TABLE ONLY public.webauthn_credentials
+    ADD CONSTRAINT fk_webauthn_credentials_account FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+CREATE TABLE public.webauthn_challenges (
+    id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+    account_id uuid,
+    type text NOT NULL CHECK (type IN ('registration', 'authentication')),
+    challenge text NOT NULL,
+    expires_at timestamptz NOT NULL,
+    created_at timestamptz DEFAULT now()
+);
+
+CREATE INDEX idx_webauthn_challenges_expires ON public.webauthn_challenges USING btree (expires_at);
+
+ALTER TABLE ONLY public.webauthn_challenges
+    ADD CONSTRAINT fk_webauthn_challenges_account FOREIGN KEY (account_id) REFERENCES public.accounts(id) ON DELETE CASCADE;
+
+--
 -- Verknüpfung Account ↔ Spieler-Einträge
 --
 

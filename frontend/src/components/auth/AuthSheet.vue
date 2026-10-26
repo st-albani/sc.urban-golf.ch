@@ -30,6 +30,19 @@
         >
           {{ $t('Auth.RequestCode') }}
         </AppButton>
+        <template v-if="auth.passkeySupported">
+          <AppButton
+            variant="secondary"
+            size="lg"
+            block
+            pill
+            :disabled="busy"
+            @click="submitPasskey"
+          >
+            {{ $t('Auth.PasskeySignIn') }}
+          </AppButton>
+          <p v-if="passkeyError" class="auth__error" role="alert">{{ $t('Auth.PasskeyFailed') }}</p>
+        </template>
       </template>
 
       <template v-else>
@@ -89,6 +102,7 @@ const email = ref('')
 const code = ref('')
 const busy = ref(false)
 const error = ref(false)
+const passkeyError = ref(false)
 
 const emailValid = computed(() => EMAIL_PATTERN.test(email.value.trim()))
 
@@ -113,6 +127,21 @@ async function submitCode() {
     auth.closeLogin()
   } catch {
     error.value = true
+  } finally {
+    busy.value = false
+  }
+}
+
+async function submitPasskey() {
+  if (busy.value) return
+  busy.value = true
+  passkeyError.value = false
+  try {
+    await auth.loginWithPasskey()
+    success(t('Auth.SignedIn'))
+    auth.closeLogin()
+  } catch {
+    passkeyError.value = true
   } finally {
     busy.value = false
   }
@@ -146,6 +175,7 @@ watch(
       step.value = 'email'
       code.value = ''
       error.value = false
+      passkeyError.value = false
       busy.value = false
     }
   },
