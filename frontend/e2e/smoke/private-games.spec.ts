@@ -59,7 +59,12 @@ test.describe('Private Spiele (Smoke)', () => {
     // Abmelden → nun anonyme Sicht auf die öffentliche „Alle"-Liste.
     await page.goto('/')
     await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
-    await page.getByRole('button', { name: 'Abmelden' }).click()
+    // axios sendet erst nach einem asynchronen cookieStore-Read (XSRF) — ohne
+    // Warten bricht page.goto den Logout-POST ab, bevor er rausgeht.
+    await Promise.all([
+      page.waitForResponse('**/api/auth/logout'),
+      page.getByRole('button', { name: 'Abmelden' }).click(),
+    ])
 
     await page.goto('/games')
     // Öffentliche Fixture-Runde bleibt sichtbar; die private ist ausgeblendet.
