@@ -8,7 +8,7 @@ Für How-To und Setup siehe [README.md](README.md) und [CONTRIBUTING.md](CONTRIB
 ```
  ┌──────────────────┐   HTTPS/REST   ┌────────────────┐   pg (TCP)   ┌─────────────┐
  │  Vue 3 PWA       │ ──────────────▶│  Fastify API   │ ────────────▶│ PostgreSQL  │
- │  (Nginx static)  │                │  (Node 20)     │              │  16-alpine  │
+ │  (Nginx static)  │                │  (Node 26)     │              │  16-alpine  │
  │   /frontend      │◀──────────────▶│   /backend     │              └─────────────┘
  └──────────────────┘   Service-     └────────────────┘
          │               Worker                 ▲

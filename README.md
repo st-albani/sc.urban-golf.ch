@@ -50,7 +50,7 @@ docker compose -f docker-compose.dev.yml up -d
 - Backend API → <http://localhost:3000/api>
 - pgAdmin → <http://localhost:5050> (admin@urbangolf.local / admin)
 
-### Nativ (ohne Docker, Node 20+)
+### Nativ (ohne Docker, Node 26+)
 
 ```bash
 npm install                      # beide Workspaces

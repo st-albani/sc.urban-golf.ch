@@ -19,7 +19,7 @@ npm run dev                                                   # http://localhost
 
 | Bereich | Version / Library |
 | --- | --- |
-| Runtime | Node.js 24 LTS (ESM) |
+| Runtime | Node.js 26 LTS (ESM) |
 | Framework | Fastify 5 |
 | DB | PostgreSQL 16 via `pg` (nativer Client, kein ORM) |
 | Migrations | node-pg-migrate 9 (SQL-Files, vorwärts-only) |

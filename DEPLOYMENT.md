@@ -9,7 +9,7 @@ Architektur siehe [ARCHITECTURE.md](ARCHITECTURE.md).
 ┌──────────────┐   ┌──────────────┐   ┌─────────────┐
 │  Nginx       │   │  Fastify 5   │   │  Postgres   │
 │  (Frontend,  │──▶│  (Backend,   │──▶│  16-alpine  │
-│   static)    │   │   Node 20)   │   │             │
+│   static)    │   │   Node 26)   │   │             │
 └──────────────┘   └──────────────┘   └─────────────┘
 ```
 
@@ -24,7 +24,7 @@ wenn alle Test-Jobs grün sind.
 
 ### Prerequisites
 - Docker & Docker Compose
-- Node.js 20+ (for local development without Docker)
+- Node.js 26+ (for local development without Docker)
 
 ### Quick Start
 

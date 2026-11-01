@@ -1,5 +1,5 @@
 # Backend Dockerfile
-FROM node:24-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 
 # Copy root package files and every workspace's package.json so npm can
@@ -19,7 +19,7 @@ COPY packages/contract/ ./packages/contract/
 RUN npm ci --workspace=backend --workspace=@urban-golf/contract --omit=dev \
  && mkdir -p /app/backend/node_modules
 
-FROM node:24-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
