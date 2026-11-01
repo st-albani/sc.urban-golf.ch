@@ -64,6 +64,32 @@ const scoreRowSchema = {
   },
 };
 
+// Antwort von navigator.credentials.create()/get() im JSON-Format von
+// @simplewebauthn/browser. Der Inhalt von `response` wird erst bei der
+// kryptografischen Prüfung im Backend validiert.
+const webauthnCredentialResponseSchema = {
+  type: 'object',
+  required: ['id', 'rawId', 'type', 'response'],
+  properties: {
+    id: { type: 'string', minLength: 1, maxLength: 1024 },
+    rawId: { type: 'string', minLength: 1, maxLength: 1024 },
+    type: { type: 'string', const: 'public-key' },
+    response: { type: 'object' },
+    clientExtensionResults: { type: 'object' },
+    authenticatorAttachment: { type: 'string' },
+  },
+};
+
+const passkeyVerifyBody = {
+  type: 'object',
+  required: ['challengeId', 'response'],
+  properties: {
+    challengeId: { type: 'string', pattern: '^[0-9a-fA-F-]{36}$' },
+    response: webauthnCredentialResponseSchema,
+  },
+  additionalProperties: false,
+};
+
 export const schemas = Object.freeze({
   // Route-Params einer `:id`-Route. Die Prüfung liegt damit am Framework-Seam:
   // Fastify lehnt eine unpassende ID ab, bevor der Handler läuft (400 über den
@@ -248,6 +274,10 @@ export const schemas = Object.freeze({
       additionalProperties: false,
     },
   },
+
+  postAuthPasskeyRegisterVerify: { body: passkeyVerifyBody },
+
+  postAuthPasskeyLoginVerify: { body: passkeyVerifyBody },
 });
 
 export { playerSchema, gameRowSchema, scoreRowSchema };

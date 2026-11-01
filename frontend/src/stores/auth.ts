@@ -8,8 +8,13 @@ import {
   setProfile as apiSetProfile,
   deleteAccount as apiDeleteAccount,
   setAvatar as apiSetAvatar,
+  fetchPasskeyRegisterOptions,
+  verifyPasskeyRegistration,
+  fetchPasskeyLoginOptions,
+  verifyPasskeyLogin,
   type Account,
 } from '@/services/api'
+import { browserSupportsWebAuthn, startAuthentication, startRegistration } from '@simplewebauthn/browser'
 
 /**
  * Optionale Identität. Der Login ist nie erzwungen — anonyme Nutzung bleibt
@@ -50,6 +55,24 @@ export const useAuthStore = defineStore('auth', () => {
     account.value = await apiVerifyOtp(email, code)
   }
 
+  // Ohne WebAuthn-Unterstützung bleiben die Passkey-Einstiege ausgeblendet —
+  // E-Mail-OTP ist dann der einzige (vollwertige) Login-Weg.
+  const passkeySupported = browserSupportsWebAuthn()
+
+  /** Passkey für das eingeloggte Konto auf diesem Gerät einrichten. */
+  async function registerPasskey() {
+    const { challengeId, options } = await fetchPasskeyRegisterOptions()
+    const response = await startRegistration({ optionsJSON: options })
+    await verifyPasskeyRegistration(challengeId, response)
+  }
+
+  /** Anmeldung per Passkey. Wirft bei Abbruch oder ungültigem Passkey. */
+  async function loginWithPasskey() {
+    const { challengeId, options } = await fetchPasskeyLoginOptions()
+    const response = await startAuthentication({ optionsJSON: options })
+    account.value = await verifyPasskeyLogin(challengeId, response)
+  }
+
   async function logout() {
     try {
       await apiLogout()
@@ -80,5 +103,6 @@ export const useAuthStore = defineStore('auth', () => {
     account, loaded, loginOpen, isLoggedIn, displayName, avatar, playerId,
     openLogin, closeLogin, loadMe, requestOtp, verifyOtp, logout,
     setDisplayName, deleteAccount, setAvatar,
+    passkeySupported, registerPasskey, loginWithPasskey,
   }
 })

@@ -153,7 +153,12 @@
     "DisplayNamePlaceholder": "Je naam",
     "NameHint": "Kies je weergavenaam — zo verschijn je in je rondes.",
     "NameSaved": "Naam opgeslagen.",
-    "MyStats": "Mijn statistieken"
+    "MyStats": "Mijn statistieken",
+    "PasskeySignIn": "Inloggen met passkey",
+    "PasskeyFailed": "Inloggen met passkey mislukt. Gebruik in plaats daarvan de e-mailcode.",
+    "PasskeySetup": "Passkey instellen",
+    "PasskeyAdded": "Passkey ingesteld — voortaan log je binnen enkele seconden in.",
+    "PasskeySetupFailed": "Passkey kon niet worden ingesteld."
   },
   "Profile": {
     "Title": "Profiel",

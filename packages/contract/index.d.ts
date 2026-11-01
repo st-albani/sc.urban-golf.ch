@@ -40,6 +40,8 @@ export interface Schemas {
   readonly postAuthVerifyOtp: RouteSchema;
   readonly postAuthProfile: RouteSchema;
   readonly postAuthAvatar: RouteSchema;
+  readonly postAuthPasskeyRegisterVerify: RouteSchema;
+  readonly postAuthPasskeyLoginVerify: RouteSchema;
 }
 
 export const schemas: Schemas;

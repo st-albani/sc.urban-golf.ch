@@ -153,7 +153,12 @@
     "DisplayNamePlaceholder": "Ton nom",
     "NameHint": "Choisis ton nom d'affichage — c'est ainsi que tu apparais dans tes parties.",
     "NameSaved": "Nom enregistré.",
-    "MyStats": "Mes statistiques"
+    "MyStats": "Mes statistiques",
+    "PasskeySignIn": "Se connecter avec une clé d'accès",
+    "PasskeyFailed": "La connexion avec la clé d'accès a échoué. Utilise plutôt le code par e-mail.",
+    "PasskeySetup": "Configurer une clé d'accès",
+    "PasskeyAdded": "Clé d'accès configurée — tu pourras désormais te connecter en quelques secondes.",
+    "PasskeySetupFailed": "La clé d'accès n'a pas pu être configurée."
   },
   "Profile": {
     "Title": "Profil",

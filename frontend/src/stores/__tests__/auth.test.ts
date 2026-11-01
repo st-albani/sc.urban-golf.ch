@@ -6,10 +6,30 @@ vi.mock('@/services/api', () => ({
   verifyOtp: vi.fn(),
   fetchMe: vi.fn(),
   logout: vi.fn().mockResolvedValue(undefined),
+  fetchPasskeyRegisterOptions: vi.fn(),
+  verifyPasskeyRegistration: vi.fn().mockResolvedValue(undefined),
+  fetchPasskeyLoginOptions: vi.fn(),
+  verifyPasskeyLogin: vi.fn(),
+}))
+
+vi.mock('@simplewebauthn/browser', () => ({
+  browserSupportsWebAuthn: () => true,
+  startRegistration: vi.fn(),
+  startAuthentication: vi.fn(),
 }))
 
 import { useAuthStore } from '../auth'
-import { requestOtp, verifyOtp, fetchMe, logout } from '@/services/api'
+import {
+  requestOtp, verifyOtp, fetchMe, logout,
+  fetchPasskeyRegisterOptions, verifyPasskeyRegistration, fetchPasskeyLoginOptions, verifyPasskeyLogin,
+} from '@/services/api'
+import { startRegistration, startAuthentication } from '@simplewebauthn/browser'
+import type {
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+} from '@simplewebauthn/browser'
 
 describe('useAuthStore', () => {
   beforeEach(() => {
@@ -69,5 +89,38 @@ describe('useAuthStore', () => {
     await s.logout()
     expect(s.isLoggedIn).toBe(false)
     expect(logout).toHaveBeenCalled()
+  })
+
+  it('registerPasskey runs the ceremony with the server options and verifies with the same challenge', async () => {
+    const options = { challenge: 'c1' } as PublicKeyCredentialCreationOptionsJSON
+    const response = { id: 'cred-1' } as RegistrationResponseJSON
+    vi.mocked(fetchPasskeyRegisterOptions).mockResolvedValue({ challengeId: 'ch-1', options })
+    vi.mocked(startRegistration).mockResolvedValue(response)
+    const s = useAuthStore()
+    await s.registerPasskey()
+    expect(startRegistration).toHaveBeenCalledWith({ optionsJSON: options })
+    expect(verifyPasskeyRegistration).toHaveBeenCalledWith('ch-1', response)
+  })
+
+  it('loginWithPasskey logs in with the returned account', async () => {
+    const options = { challenge: 'c2' } as PublicKeyCredentialRequestOptionsJSON
+    const response = { id: 'cred-1' } as AuthenticationResponseJSON
+    vi.mocked(fetchPasskeyLoginOptions).mockResolvedValue({ challengeId: 'ch-2', options })
+    vi.mocked(startAuthentication).mockResolvedValue(response)
+    vi.mocked(verifyPasskeyLogin).mockResolvedValue({ id: 'a1', email: 'a@b.com', displayName: 'Anna', avatar: null, playerId: 'p1' })
+    const s = useAuthStore()
+    await s.loginWithPasskey()
+    expect(verifyPasskeyLogin).toHaveBeenCalledWith('ch-2', response)
+    expect(s.isLoggedIn).toBe(true)
+    expect(s.account?.email).toBe('a@b.com')
+  })
+
+  it('loginWithPasskey stays logged out when the user cancels', async () => {
+    vi.mocked(fetchPasskeyLoginOptions).mockResolvedValue({ challengeId: 'ch-3', options: { challenge: 'c3' } as PublicKeyCredentialRequestOptionsJSON })
+    vi.mocked(startAuthentication).mockRejectedValue(new Error('NotAllowedError'))
+    const s = useAuthStore()
+    await expect(s.loginWithPasskey()).rejects.toThrow()
+    expect(verifyPasskeyLogin).not.toHaveBeenCalled()
+    expect(s.isLoggedIn).toBe(false)
   })
 })

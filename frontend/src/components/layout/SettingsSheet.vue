@@ -66,6 +66,17 @@
                 <span class="srow__label">{{ $t('Auth.MyStats') }}</span>
                 <ChevronRightIcon class="srow__chevron" />
               </router-link>
+              <button
+                v-if="auth.passkeySupported"
+                type="button"
+                class="srow"
+                :disabled="passkeyBusy"
+                @click="setupPasskey"
+              >
+                <FingerPrintIcon class="srow__icon" />
+                <span class="srow__label">{{ $t('Auth.PasskeySetup') }}</span>
+                <ChevronRightIcon class="srow__chevron" />
+              </button>
             </div>
           </section>
 
@@ -173,7 +184,7 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import {
   SunIcon, MoonIcon, ComputerDesktopIcon, CameraIcon,
-  UserIcon, ChartBarIcon, SwatchIcon, LanguageIcon,
+  UserIcon, ChartBarIcon, SwatchIcon, LanguageIcon, FingerPrintIcon,
   ChevronRightIcon, ArrowLeftIcon,
 } from '@heroicons/vue/24/outline'
 import AppBottomSheet from '@/components/ui/AppBottomSheet.vue'
@@ -276,6 +287,22 @@ async function onAvatarFile(e: Event) {
     toastError(t('Profile.AvatarFailed'))
   } finally {
     avatarBusy.value = false
+  }
+}
+
+// ---- Passkey ----
+const passkeyBusy = ref(false)
+
+async function setupPasskey() {
+  if (passkeyBusy.value) return
+  passkeyBusy.value = true
+  try {
+    await auth.registerPasskey()
+    success(t('Auth.PasskeyAdded'))
+  } catch {
+    toastError(t('Auth.PasskeySetupFailed'))
+  } finally {
+    passkeyBusy.value = false
   }
 }
 

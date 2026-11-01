@@ -1,4 +1,10 @@
 import axios from 'axios'
+import type {
+  AuthenticationResponseJSON,
+  PublicKeyCredentialCreationOptionsJSON,
+  PublicKeyCredentialRequestOptionsJSON,
+  RegistrationResponseJSON,
+} from '@simplewebauthn/browser'
 import { API_ROUTES } from '@/constants'
 
 // ---- Type definitions ----
@@ -169,6 +175,39 @@ export async function requestOtp(email: string): Promise<void> {
 
 export async function verifyOtp(email: string, code: string): Promise<Account> {
   const { data } = await axios.post<{ account: Account }>(`${API_ROUTES.AUTH}/verify-otp`, { email, code })
+  return data.account
+}
+
+// ---- Passkeys (WebAuthn) — zweiter Login-Weg, E-Mail-OTP bleibt Fallback ----
+
+export interface PasskeyOptions<T> {
+  challengeId: string
+  options: T
+}
+
+export async function fetchPasskeyRegisterOptions(): Promise<PasskeyOptions<PublicKeyCredentialCreationOptionsJSON>> {
+  const { data } = await axios.post<PasskeyOptions<PublicKeyCredentialCreationOptionsJSON>>(
+    `${API_ROUTES.AUTH}/passkey/register-options`,
+  )
+  return data
+}
+
+export async function verifyPasskeyRegistration(challengeId: string, response: RegistrationResponseJSON): Promise<void> {
+  await axios.post(`${API_ROUTES.AUTH}/passkey/register-verify`, { challengeId, response })
+}
+
+export async function fetchPasskeyLoginOptions(): Promise<PasskeyOptions<PublicKeyCredentialRequestOptionsJSON>> {
+  const { data } = await axios.post<PasskeyOptions<PublicKeyCredentialRequestOptionsJSON>>(
+    `${API_ROUTES.AUTH}/passkey/login-options`,
+  )
+  return data
+}
+
+export async function verifyPasskeyLogin(challengeId: string, response: AuthenticationResponseJSON): Promise<Account> {
+  const { data } = await axios.post<{ account: Account }>(
+    `${API_ROUTES.AUTH}/passkey/login-verify`,
+    { challengeId, response },
+  )
   return data.account
 }
 
