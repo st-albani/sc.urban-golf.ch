@@ -50,8 +50,10 @@ test.describe('Spiel-Ownership (Smoke)', () => {
     await page.getByRole('button', { name: /Profil öffnen|Open profile/i }).click()
     await page.getByRole('button', { name: /Anzeigename/ }).click()
     await page.locator('#settings-name').fill('Selbsttester')
+    // Gezielt auf den Namens-Toast warten: der Login-Toast kann noch sichtbar
+    // sein, während der Profil-POST (nach async cookieStore-Read) noch aussteht.
     await page.getByRole('button', { name: 'Absenden' }).click()
-    await expect(page.locator('.toast__message')).toBeVisible()
+    await expect(page.locator('.toast__message', { hasText: 'Name gespeichert' })).toBeVisible()
     await page.keyboard.press('Escape')
 
     await page.goto('/games/new')
