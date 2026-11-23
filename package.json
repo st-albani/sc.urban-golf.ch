@@ -45,6 +45,6 @@
     "minimatch": "^11.0.3"
   },
   "devDependencies": {
-    "npm-run-all2": "^9.0.4"
+    "npm-run-all2": "^9.1.0"
   }
 }
